@@ -1,22 +1,37 @@
 /**
  * @file main.cpp
  * @brief Dungeon Adventure Game Entry Point
- * 
- * Compile:
- * - Windows (MinGW): g++ -std=c++11 -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp
- * - Windows (MSVC): cl /EHsc /std:c++11 main.cpp map.cpp player.cpp enemy.cpp game.cpp
- * - Linux/macOS: g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp
  */
 
 #include "game.h"
+#include "colors.h"
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 int main() {
+#ifdef _WIN32
+    SetConsoleOutputCP(65001);
+    SetConsoleCP(65001);
+#endif
+
+    Colors::init();
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-    Game game;
-    game.run();
+    bool playAgain = true;
+    while (playAgain) {
+        Game game;
+        playAgain = game.run();
+    }
+
+    std::cout << std::endl;
+    color(COLOR_CYAN);
+    std::cout << "Thanks for playing! Goodbye." << std::endl;
+    resetColor();
 
     return 0;
 }

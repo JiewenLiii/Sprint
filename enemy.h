@@ -3,24 +3,44 @@
 
 #include "map.h"
 #include <vector>
+#include <string>
+
+enum Difficulty {
+    EASY = 0,
+    HARD = 1
+};
+
+struct DifficultySettings {
+    int enemyCount;
+    int enemyHp;
+    int enemyAttack;
+};
 
 class Enemy {
 public:
     int x, y;
     int hp;
-    int attack;
     int maxHp;
+    int attack;
+    int id;
 
     Enemy();
-    Enemy(int startX, int startY, int enemyHp, int enemyAttack);
+    Enemy(int startX, int startY, int enemyHp, int enemyAttack, int enemyId);
 
-    bool moveTowardsPlayer(int playerX, int playerY, const Map& map);
-    bool randomMove(const Map& map);
+    bool moveTowardsPlayer(int playerX, int playerY, const Map& map, 
+                           const std::vector<Enemy>& enemies);
+    bool randomMove(const Map& map, const std::vector<Enemy>& enemies);
     void takeDamage(int damage);
     bool isAlive() const;
-    void reset(int startX, int startY);
+    
+    std::string getName() const { return "Enemy " + std::to_string(id + 1); }
+    
+private:
+    static bool isEnemyAt(int x, int y, const std::vector<Enemy>& enemies, int excludeId);
 };
 
-void spawnEnemies(const Map& map, std::vector<Enemy>& enemies, int count, int playerX, int playerY);
+DifficultySettings getDifficultySettings(Difficulty difficulty);
+void spawnEnemies(const Map& map, std::vector<Enemy>& enemies, int count, 
+                  int hp, int attack, int playerX, int playerY);
 
 #endif // ENEMY_H

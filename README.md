@@ -1,50 +1,113 @@
 # Dungeon Adventure Game
 
-A console-based dungeon adventure game implemented in pure C++11.
+一个使用纯 C++ 标准库实现的控制台地牢探险游戏。
 
-## Files
+## 功能特性
+
+### 核心玩法
+- **50x50 大地图** - 广阔的探索空间
+- **视野系统** - 战争迷雾，未探索区域显示为黑色
+- **实时移动** - WASD 控制，移动后立即显示
+- **足迹系统** - 显示玩家和敌人的移动轨迹
+- **回合制战斗** - 敌人先手机制，增加挑战性
+- **难度选择** - Easy/Hard 两种模式
+- **重玩功能** - 游戏结束后可选择重新开始
+
+### 游戏界面
 
 ```
-dungeon_game/
-├── main.cpp      # Entry point
-├── game.h        # Game class header
-├── game.cpp      # Game class implementation
-├── map.h         # Map class header
-├── map.cpp       # Map class implementation
-├── player.h      # Player class header
-├── player.cpp    # Player class implementation
-├── enemy.h       # Enemy class header
-├── enemy.cpp     # Enemy class implementation
-└── README.md     # This file
+====== Dungeon Adventure (50x50) ======
+Legend: @ = You, E = Enemy, # = Wall, . = Floor
+        ? = Unknown, : = Explored, ' = EnemyFootprint, * = YourFootprint
+Controls: W/A/S/D to move, Q to quit
+
+###############################
+#.............................#
+#.............................#
+#........................E....#
+#...................* @ .......#  ← 玩家和足迹
+#..............................#
+###############################
+
+Position: (16, 25)
+
+Player HP: 20/20 | Attack: 5
+Enemies Remaining: 3
 ```
 
-## Compile Commands
+### 图例说明
 
-### Windows (MinGW / MSYS2)
+| 符号 | 含义 | 显示条件 |
+|------|------|---------|
+| `@` | 玩家 | 始终显示（绿色） |
+| `E` | 敌人 | 只在可见区域（红色） |
+| `#` | 墙壁 | 可见时亮蓝色，不可见时暗蓝色 |
+| `.` | 地板 | 只在可见区域 |
+| `:` | 已探索地板 | 不可见但已探索（暗色） |
+| `*` | 玩家足迹 | 可见区域，绿色，保留 50 步 |
+| `'` | 敌人足迹 | 可见区域，黄色，保留 50 步 |
+| ` ` (空格) | 未探索区域 | 完全黑色，不显示任何内容 |
+
+### 操作说明
+
+| 按键 | 功能 |
+|------|------|
+| **W** | 向上移动 |
+| **A** | 向左移动 |
+| **S** | 向下移动 |
+| **D** | 向右移动 |
+| **Q** | 退出游戏 |
+
+### 战斗机制
+
+#### 先手规则
+
+| 情况 | 先手方 | 说明 |
+|------|--------|------|
+| **玩家移动到敌人相邻** | 玩家先手 | 玩家主动挑战 |
+| **敌人移动到玩家相邻** | 敌人先手 | 敌人突袭玩家 |
+
+#### 战斗流程
+
+1. 玩家移动到敌人相邻格
+2. 显示提示 "Enemy adjacent! Press any key to fight..."
+3. 按任意键进入战斗
+4. 回合制交替攻击
+5. 一方死亡后战斗结束
+
+### 难度设置
+
+| 难度 | 敌人数量 | 敌人 HP | 敌人攻击 |
+|------|---------|--------|---------|
+| **Easy** | 3 | 10 | 3 |
+| **Hard** | 8 | 15 | 6 |
+
+### 游戏目标
+
+- **胜利条件**：消灭所有敌人
+- **失败条件**：玩家 HP 归零
+
+## 编译说明
+
+### Windows (MinGW/MSYS2)
+
 ```bash
-cd C:\Users\34764\dungeon_game
-g++ -std=c++11 -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp
+g++ -std=c++11 -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
 ```
 
-### Windows (MSVC - Developer Command Prompt)
+### Windows (MSVC - 开发者命令行)
+
 ```batch
-cd C:\Users\34764\dungeon_game
-cl /EHsc /std:c++11 main.cpp map.cpp player.cpp enemy.cpp game.cpp
+cl /EHsc /std:c++11 main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
 ```
 
-### Linux
+### Linux / macOS
+
 ```bash
-cd /path/to/dungeon_game
-g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp
+g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
 ```
 
-### macOS
-```bash
-cd /path/to/dungeon_game
-g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp
-```
-
-## Run
+## 运行游戏
 
 ### Windows
 ```bash
@@ -56,44 +119,71 @@ dungeon.exe
 ./dungeon
 ```
 
-## Controls
+## 系统要求
 
-| Key | Action |
-|-----|--------|
-| W   | Move Up |
-| A   | Move Left |
-| S   | Move Down |
-| D   | Move Right |
-| Q   | Quit Game |
+- **编译器**：支持 C++11 或更高版本
+- **操作系统**：Windows / Linux / macOS
+- **依赖**：仅使用 C++ 标准库
 
-## Game Rules
+## 项目结构
 
-1. **Objective**: Defeat all enemies (3 initially)
-2. **Player Stats**: HP 20, Attack 5
-3. **Enemy Stats**: HP 10, Attack 3
-4. **Combat System**:
-   - Combat triggers when player moves onto enemy position
-   - Combat triggers when enemy moves onto player position
-   - Turn-based combat until one side dies
-5. **Enemy AI**:
-   - Enemies chase player when within 3 tiles
-   - Otherwise patrol randomly
+```
+Sprint/
+├── main.cpp          # 程序入口
+├── game.h / game.cpp # 游戏主逻辑
+├── map.h / map.cpp   # 地图系统（视野、迷雾）
+├── player.h / player.cpp # 玩家系统
+├── enemy.h / enemy.cpp   # 敌人系统（AI、生成）
+├── colors.h / colors.cpp # 跨平台颜色支持
+├── keyboard.h        # 无缓冲键盘输入
+└── README.md         # 本文件
+```
 
-## Legend
+## 技术特点
 
-| Symbol | Meaning |
-|--------|---------|
-| @      | Player |
-| E      | Enemy |
-| #      | Wall (impassable) |
-| .      | Floor (walkable) |
+1. **跨平台支持** - Windows/Linux/macOS 均可运行
+2. **无缓冲输入** - 使用 `keyboard.h` 实现即时响应
+3. **颜色系统** - `colors.h` 提供跨平台颜色支持
+4. **视野算法** - 基于切比雪夫距离的圆形视野
+5. **探索系统** - 记录已探索区域，永久可见
+6. **足迹追踪** - 保留最近 50 步移动轨迹
+7. **敌人 AI** - 追击（5 格内）+ 巡逻（5 格外）
+8. **敌人碰撞** - 敌人之间不会重叠
 
-## Requirements
+## 游戏流程
 
-- C++11 or higher compiler
-- Standard console environment
+```
+开始菜单 → 选择难度 → 游戏开始
+    ↓
+探索地图 → 移动留下足迹
+    ↓
+遭遇敌人 → 触发战斗
+    ↓
+┌─────┴─────┐
+│           │
+胜利       失败
+│           │
+继续探索   游戏结束
+    ↓
+消灭所有敌人 → 胜利 → 重玩/退出
+```
 
-## Notes
+## 版本历史
 
-- Game uses `system("cls")` / `system("clear")` for screen clearing
-- Random seed is time-based, enemy positions vary each run
+### v1.0 (当前版本)
+- ✅ 50x50 地图和视野系统
+- ✅ 难度选择（Easy/Hard）
+- ✅ 重玩功能
+- ✅ 足迹系统
+- ✅ 敌人先手机制
+- ✅ 实时移动显示
+- ✅ 跨平台颜色支持
+- ✅ 敌人碰撞检测
+
+## 许可证
+
+本项目仅供学习和娱乐用途。
+
+## 致谢
+
+感谢所有参与开发的贡献者！
