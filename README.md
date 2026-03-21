@@ -1,12 +1,99 @@
-## 团队名称
-Debug or Die
-## 团队口号
-Catch the bug, save the world!
-## Scrum 角色分配
-| 姓名 | 学号 | 角色                | 核心职责                                                                 |
-|------|---------------|---------------------|--------------------------------------------------------------------------|
-|李洁雯 |  9109223168 | Scrum Master (SM)   | 维护敏捷流程、管理团队仓库、协调沟通、解决开发过程中的阻碍                 |
-|王鑫瑀 | 9109223158      | 产品负责人 (PO)     | 梳理产品需求、确定需求优先级、对接外部反馈、验收开发成果                 |
-| 易雅芸 | 9109223154     | 开发团队 (Dev Team) | 负责产品功能开发、代码编写与自测、配合PO确认需求、响应SM的流程协调       |
+# Dungeon Adventure Game
 
+A console-based dungeon adventure game implemented in pure C++11.
 
+## Files
+
+```
+dungeon_game/
+├── main.cpp      # Entry point
+├── game.h        # Game class header
+├── game.cpp      # Game class implementation
+├── map.h         # Map class header
+├── map.cpp       # Map class implementation
+├── player.h      # Player class header
+├── player.cpp    # Player class implementation
+├── enemy.h       # Enemy class header
+├── enemy.cpp     # Enemy class implementation
+└── README.md     # This file
+```
+
+## Compile Commands
+
+### Windows (MinGW / MSYS2)
+```bash
+cd C:\Users\34764\dungeon_game
+g++ -std=c++11 -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp
+```
+
+### Windows (MSVC - Developer Command Prompt)
+```batch
+cd C:\Users\34764\dungeon_game
+cl /EHsc /std:c++11 main.cpp map.cpp player.cpp enemy.cpp game.cpp
+```
+
+### Linux
+```bash
+cd /path/to/dungeon_game
+g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp
+```
+
+### macOS
+```bash
+cd /path/to/dungeon_game
+g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp
+```
+
+## Run
+
+### Windows
+```bash
+dungeon.exe
+```
+
+### Linux / macOS
+```bash
+./dungeon
+```
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| W   | Move Up |
+| A   | Move Left |
+| S   | Move Down |
+| D   | Move Right |
+| Q   | Quit Game |
+
+## Game Rules
+
+1. **Objective**: Defeat all enemies (3 initially)
+2. **Player Stats**: HP 20, Attack 5
+3. **Enemy Stats**: HP 10, Attack 3
+4. **Combat System**:
+   - Combat triggers when player moves onto enemy position
+   - Combat triggers when enemy moves onto player position
+   - Turn-based combat until one side dies
+5. **Enemy AI**:
+   - Enemies chase player when within 3 tiles
+   - Otherwise patrol randomly
+
+## Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| @      | Player |
+| E      | Enemy |
+| #      | Wall (impassable) |
+| .      | Floor (walkable) |
+
+## Requirements
+
+- C++11 or higher compiler
+- Standard console environment
+
+## Notes
+
+- Game uses `system("cls")` / `system("clear")` for screen clearing
+- Random seed is time-based, enemy positions vary each run
