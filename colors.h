@@ -25,7 +25,7 @@ enum Color {
     COLOR_BRIGHT_MAGENTA = 95,
     COLOR_BRIGHT_CYAN = 96,
     COLOR_BRIGHT_WHITE = 97,
-    
+
     // Background colors
     BG_BLACK = 40,
     BG_RED = 41,

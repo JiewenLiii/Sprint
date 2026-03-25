@@ -22,10 +22,10 @@ int main() {
     Colors::init();
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-    bool playAgain = true;
-    while (playAgain) {
+    bool showMenu = true;
+    while (showMenu) {
         Game game;
-        playAgain = game.run();
+        showMenu = game.run();
     }
 
     std::cout << std::endl;

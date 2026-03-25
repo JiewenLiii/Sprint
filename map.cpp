@@ -1,4 +1,5 @@
 #include "map.h"
+#include "enemy.h"
 #include "colors.h"
 #include <iostream>
 #include <algorithm>
@@ -40,9 +41,10 @@ char Map::getTile(int x, int y) const {
 }
 
 bool Map::isVisible(int playerX, int playerY, int x, int y) const {
-    int dx = std::abs(x - playerX);
-    int dy = std::abs(y - playerY);
-    return (dx <= VIEW_RADIUS && dy <= VIEW_RADIUS);
+    int dx = x - playerX;
+    int dy = y - playerY;
+    // 欧几里得距离，圆形视野
+    return (dx*dx + dy*dy <= VIEW_RADIUS * VIEW_RADIUS);
 }
 
 bool Map::isExplored(int x, int y) const {
@@ -50,53 +52,50 @@ bool Map::isExplored(int x, int y) const {
     return explored[y][x];
 }
 
-void Map::render(int playerX, int playerY, const int enemies[][2], int enemyCount,
-                 const std::vector<std::pair<int,int>>& footprints,
+void Map::render(int playerX, int playerY,
+                 const std::vector<Enemy>& enemies,
+                 const std::vector<std::vector<std::pair<int,int>>>& enemyFootprints,
                  const std::vector<std::pair<int,int>>& playerFootprints) const {
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
-#endif
-
-    // 更新探索记录
+    // Update explored tiles - 圆形视野
     for (int dy = -VIEW_RADIUS; dy <= VIEW_RADIUS; ++dy) {
         for (int dx = -VIEW_RADIUS; dx <= VIEW_RADIUS; ++dx) {
             int x = playerX + dx;
             int y = playerY + dy;
             if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT) {
-                explored[y][x] = true;
+                // 欧几里得距离，圆形探索区域
+                if (dx*dx + dy*dy <= VIEW_RADIUS * VIEW_RADIUS) {
+                    explored[y][x] = true;
+                }
             }
         }
     }
 
-    // 计算视口（更大的显示区域）
-    int viewW = 31, viewH = 21;  // 增大显示区域
-    int startX = std::max(0, playerX - viewW / 2);
-    int startY = std::max(0, playerY - viewH / 2);
-    int endX = std::min(WIDTH, startX + viewW);
-    int endY = std::min(HEIGHT, startY + viewH);
-
-    std::cout << "====== Dungeon Adventure (50x50) ======" << std::endl;
-    std::cout << "Legend: @ = You, E = Enemy, # = Wall, . = Floor" << std::endl;
-    std::cout << "        ? = Unknown, : = Explored, ' = EnemyFootprint, * = YourFootprint" << std::endl;
-    std::cout << "Controls: W/A/S/D to move, Q to quit" << std::endl;
+    // Top border
+    std::cout << "  ";
+    color(COLOR_BRIGHT_CYAN);
+    std::cout << "+";
+    for (int x = 0; x < WIDTH; ++x) std::cout << "-";
+    std::cout << "+";
+    resetColor();
     std::cout << std::endl;
 
-    for (int y = startY; y < endY; ++y) {
-        for (int x = startX; x < endX; ++x) {
+    for (int y = 0; y < HEIGHT; ++y) {
+        std::cout << "  ";
+        color(COLOR_BRIGHT_CYAN);
+        std::cout << "|";
+        resetColor();
+
+        for (int x = 0; x < WIDTH; ++x) {
             bool visible = isVisible(playerX, playerY, x, y);
             bool isExploredTile = isExplored(x, y);
 
-            // 未探索区域 - 完全不显示（黑色空格）
             if (!isExploredTile) {
                 color(COLOR_BLACK);
-                std::cout << ' ';  // 不显示任何符号
+                std::cout << "?";
                 resetColor();
                 continue;
             }
 
-            // 玩家位置
             if (x == playerX && y == playerY) {
                 color(COLOR_BRIGHT_GREEN);
                 std::cout << '@';
@@ -104,13 +103,18 @@ void Map::render(int playerX, int playerY, const int enemies[][2], int enemyCoun
                 continue;
             }
 
-            // 敌人位置（只在可见时显示）
             if (visible) {
                 bool isEnemy = false;
-                for (int i = 0; i < enemyCount; ++i) {
-                    if (enemies[i][0] == x && enemies[i][1] == y) {
-                        color(COLOR_RED);
-                        std::cout << 'E';
+                for (const auto& enemy : enemies) {
+                    if (enemy.isAlive() && enemy.x == x && enemy.y == y) {
+                        int colorIdx = enemy.getId() % 4;
+                        switch (colorIdx) {
+                            case 0: color(COLOR_RED); break;
+                            case 1: color(COLOR_BRIGHT_RED); break;
+                            case 2: color(COLOR_MAGENTA); break;
+                            case 3: color(COLOR_BRIGHT_MAGENTA); break;
+                        }
+                        std::cout << enemy.getSymbol();
                         resetColor();
                         isEnemy = true;
                         break;
@@ -119,27 +123,44 @@ void Map::render(int playerX, int playerY, const int enemies[][2], int enemyCoun
                 if (isEnemy) continue;
             }
 
-            // 足迹显示（只在可见区域）
             if (visible) {
                 bool isFootprint = false;
-                
-                // 敌人足迹
-                for (const auto& fp : footprints) {
-                    if (fp.first == x && fp.second == y) {
-                        color(COLOR_YELLOW);
-                        std::cout << '\'';  // 敌人足迹符号
-                        resetColor();
-                        isFootprint = true;
-                        break;
+
+                // 敌人足迹 - 每个敌人有自己的足迹，显示最近 5 个，渐变效果
+                for (size_t e = 0; e < enemyFootprints.size(); ++e) {
+                    const auto& eFootprints = enemyFootprints[e];
+                    for (size_t i = 0; i < eFootprints.size(); ++i) {
+                        const auto& fp = eFootprints[i];
+                        if (fp.first == x && fp.second == y) {
+                            size_t age = eFootprints.size() - i;  // 1=最新，5=最老
+                            // 渐变：亮黄 -> 黄（最老也是黄色，不再是黑色）
+                            if (age <= 2) {
+                                color(COLOR_BRIGHT_YELLOW);  // 最近的 2 个：亮黄色
+                            } else {
+                                color(COLOR_YELLOW);  // 其余：普通黄色（不再是黑色）
+                            }
+                            std::cout << ',';
+                            resetColor();
+                            isFootprint = true;
+                            break;
+                        }
                     }
+                    if (isFootprint) break;
                 }
                 if (isFootprint) continue;
 
-                // 玩家足迹
-                for (const auto& fp : playerFootprints) {
+                // 玩家足迹 - 显示最近 5 个，渐变效果
+                for (size_t i = 0; i < playerFootprints.size(); ++i) {
+                    const auto& fp = playerFootprints[i];
                     if (fp.first == x && fp.second == y) {
-                        color(COLOR_BRIGHT_GREEN);
-                        std::cout << '*';  // 玩家足迹符号
+                        size_t age = playerFootprints.size() - i;  // 1=最新，5=最老
+                        // 渐变：亮绿 -> 绿（最老也是绿色，不再是黑色）
+                        if (age <= 2) {
+                            color(COLOR_BRIGHT_GREEN);  // 最近的 2 个：亮绿色
+                        } else {
+                            color(COLOR_GREEN);  // 其余：普通绿色（不再是黑色）
+                        }
+                        std::cout << '*';
                         resetColor();
                         isFootprint = true;
                         break;
@@ -148,7 +169,6 @@ void Map::render(int playerX, int playerY, const int enemies[][2], int enemyCoun
                 if (isFootprint) continue;
             }
 
-            // 显示地形
             if (visible) {
                 if (grid[y][x] == '#') {
                     color(COLOR_BRIGHT_BLUE);
@@ -158,18 +178,32 @@ void Map::render(int playerX, int playerY, const int enemies[][2], int enemyCoun
                     std::cout << '.';
                 }
             } else {
-                // 已探索但不可见 - 暗色显示
-                color(COLOR_BLUE);
-                if (grid[y][x] == '#') {
-                    std::cout << '#';
+                if (grid[y][x] == '.') {
+                    color(COLOR_BLACK);
+                    std::cout << ':';
+                    resetColor();
                 } else {
-                    std::cout << ':';  // 暗色地板
+                    color(COLOR_BLUE);
+                    std::cout << '#';
+                    resetColor();
                 }
-                resetColor();
             }
         }
+
+        color(COLOR_BRIGHT_CYAN);
+        std::cout << "|";
+        resetColor();
         std::cout << std::endl;
     }
-    
-    std::cout << "Position: (" << playerX << ", " << playerY << ")" << std::endl;
+
+    // Bottom border
+    std::cout << "  ";
+    color(COLOR_BRIGHT_CYAN);
+    std::cout << "+";
+    for (int x = 0; x < WIDTH; ++x) std::cout << "-";
+    std::cout << "+";
+    resetColor();
+    std::cout << std::endl;
+
+    std::cout << "  Position: (" << playerX << ", " << playerY << ")";
 }

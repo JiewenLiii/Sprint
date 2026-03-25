@@ -4,84 +4,172 @@
 #include <iostream>
 #include <string>
 #include <cctype>
+#include <algorithm>
+#include <chrono>
+#include <thread>
 
-Game::Game() : isRunning(true), isVictory(false), difficulty(EASY) {
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+Game::Game() : isRunning(true), result(QUIT), difficulty(EASY) {
     Colors::init();
 }
 
-bool Game::showStartMenu() {
-    clearScreen();
-    
-    std::cout << "================================" << std::endl;
-    color(COLOR_BRIGHT_YELLOW);
-    std::cout << "   Dungeon Adventure" << std::endl;
+bool Game::confirmQuit() {
+    std::cout << std::endl;
+    color(COLOR_YELLOW);
+    std::cout << "  Are you sure you want to quit? (y/n): ";
     resetColor();
-    std::cout << "================================" << std::endl;
+    
+    char input = Keyboard::getKey();
+    input = static_cast<char>(std::toupper(static_cast<unsigned char>(input)));
+    
+    return (input == 'Y');
+}
+
+bool Game::showMainMenu() {
+    clearScreen();
+
+    std::cout << std::endl;
+    drawLine(60);
+    color(COLOR_BRIGHT_YELLOW);
+    drawCenteredText("⚔  DUNGEON ADVENTURE  ⚔", 60);
+    resetColor();
+    color(COLOR_WHITE);
+    drawCenteredText("Explore the dungeon, defeat all enemies!", 60);
+    resetColor();
+    std::cout << std::endl;
+    drawLine(60);
     std::cout << std::endl;
     
+    // 显示难度选项 - 紧凑布局
     color(COLOR_GREEN);
     std::cout << "  [1] EASY MODE" << std::endl;
     resetColor();
-    std::cout << "      - Enemies: 3" << std::endl;
-    std::cout << "      - Enemy HP: 10, ATK: 3" << std::endl;
+    color(COLOR_WHITE);
+    std::cout << "      Enemies: 4  |  HP: 10  |  ATK: 3" << std::endl;
+    resetColor();
     std::cout << std::endl;
     
     color(COLOR_RED);
     std::cout << "  [2] HARD MODE" << std::endl;
     resetColor();
-    std::cout << "      - Enemies: 8" << std::endl;
-    std::cout << "      - Enemy HP: 15, ATK: 6" << std::endl;
+    color(COLOR_WHITE);
+    std::cout << "      Enemies: 8  |  HP: 15  |  ATK: 6" << std::endl;
+    resetColor();
     std::cout << std::endl;
     
-    std::cout << "  Select difficulty (1/2): ";
-    
-    char input = Keyboard::getKey();
-    difficulty = (input == '2') ? HARD : EASY;
-    settings = getDifficultySettings(difficulty);
-    
+    color(COLOR_CYAN);
+    std::cout << "  [3] QUIT GAME" << std::endl;
+    resetColor();
     std::cout << std::endl;
-    std::cout << "  Starting " << (difficulty == EASY ? "EASY" : "HARD") << " MODE..." << std::endl;
-    std::cout << "  Press any key to start..." << std::endl;
-    Keyboard::getKey();
     
+    drawLine(60);
+    std::cout << std::endl;
+
+    // 输入容错处理
+    char input;
+    bool validInput = false;
+    
+    while (!validInput) {
+        color(COLOR_BRIGHT_CYAN);
+        std::cout << "  Select difficulty (1/2/3): ";
+        resetColor();
+        
+        input = Keyboard::getKey();
+        
+        if (input == '1' || input == '2') {
+            validInput = true;
+            difficulty = (input == '1') ? EASY : HARD;
+            settings = getDifficultySettings(difficulty);
+            
+            std::cout << std::endl;
+            if (difficulty == EASY) {
+                color(COLOR_GREEN);
+                std::cout << "  >> Starting EASY MODE...";
+            } else {
+                color(COLOR_RED);
+                std::cout << "  >> Starting HARD MODE...";
+            }
+            resetColor();
+            std::cout << std::endl;
+            
+        } else if (input == '3') {
+            // 退出确认
+            if (confirmQuit()) {
+                return false;  // 确认退出
+            }
+            // 取消退出，继续循环
+            std::cout << std::endl;
+            color(COLOR_YELLOW);
+            std::cout << "  >> Quit cancelled. Returning to menu..." << std::endl;
+            resetColor();
+            std::cout << std::endl;
+            drawLine(60);
+            std::cout << std::endl;
+            
+        } else {
+            // 无效输入
+            std::cout << std::endl;
+            color(COLOR_BRIGHT_RED);
+            std::cout << "  >> Invalid choice. Please select 1, 2, or 3." << std::endl;
+            resetColor();
+            std::cout << std::endl;
+        }
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(800));
     return true;
 }
 
-bool Game::showEndScreen() {
-    std::cout << std::endl;
-    std::cout << "  [1] Play Again  [2] Quit" << std::endl;
-    std::cout << "  Select (1/2): ";
-    
-    char input = Keyboard::getKey();
-    
-    if (input == '1') {
-        // 重玩时清除足迹
-        footprints.clear();
-        playerFootprints.clear();
-        combatLog.clear();
-        return true;
-    }
-    return false;
-}
-
 bool Game::run() {
-    if (!showStartMenu()) return false;
-    
-    player.reset();
-    footprints.clear();
-    playerFootprints.clear();
-    spawnEnemies(map, enemies, settings.enemyCount, 
-                 settings.enemyHp, settings.enemyAttack, 
-                 player.x, player.y);
-    combatLog.clear();
-    isRunning = true;
-    isVictory = false;
+    if (!showMainMenu()) {
+        return false;
+    }
+
+    initGame();
+
+    clearScreen();
+    std::cout << std::endl;
+    drawLine(50);
+    color(COLOR_BRIGHT_GREEN);
+    drawCenteredText("GAME START!", 50);
+    resetColor();
+    drawLine(50);
+    std::cout << std::endl;
+
+    color(COLOR_CYAN);
+    std::cout << "  Legend: ";
+    resetColor();
+    color(COLOR_BRIGHT_GREEN); std::cout << "@=You"; resetColor(); std::cout << ", ";
+    color(COLOR_RED); std::cout << "E=Enemy"; resetColor();
+    std::cout << std::endl;
+
+    color(COLOR_CYAN);
+    std::cout << "          ";
+    resetColor();
+    std::cout << ".=floor, ";
+    color(COLOR_BRIGHT_BLUE); std::cout << "#=wall"; resetColor(); std::cout << ", ";
+    color(COLOR_BLACK); std::cout << "?=unknown"; resetColor(); std::cout << ", ";
+    color(COLOR_YELLOW); std::cout << ",=footprint"; resetColor();
+    std::cout << std::endl;
+
+    std::cout << "  Controls: W/A/S/D to move, Q to quit" << std::endl;
+    std::cout << "  Defeat all " << settings.enemyCount << " enemies!" << std::endl;
+    std::cout << std::endl;
+    color(COLOR_YELLOW);
+    std::cout << "  Press any key to start...";
+    resetColor();
+    Keyboard::getKey();
+    std::cout << std::endl;
 
     while (isRunning) {
         render();
         showPlayerStatus();
 
         if (!handleInput()) {
+            result = QUIT;
             break;
         }
 
@@ -89,45 +177,99 @@ bool Game::run() {
         checkGameOver();
     }
 
-    showGameOver();
     return showEndScreen();
 }
 
+void Game::initGame() {
+    player.reset();
+    spawnEnemies(map, enemies, settings.enemyCount,
+                 settings.enemyHp, settings.enemyAttack,
+                 player.x, player.y);
+    enemyFootprints.clear();
+    enemyFootprints.resize(enemies.size());  // 为每个敌人创建足迹向量
+    playerFootprints.clear();
+    combatLog.clear();
+    isRunning = true;
+    result = QUIT;
+}
+
+void Game::clearScreen() {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+}
+
+void Game::drawLine(int width) {
+    color(COLOR_CYAN);
+    for (int i = 0; i < width; ++i) std::cout << "=";
+    resetColor();
+    std::cout << std::endl;
+}
+
+void Game::drawCenteredText(const std::string& text, int width) {
+    int padding = (width - static_cast<int>(text.length())) / 2;
+    if (padding < 0) padding = 0;
+    for (int i = 0; i < padding; ++i) std::cout << " ";
+    std::cout << text << std::endl;
+}
+
 void Game::render() {
-    int enemyPositions[20][2];
-    int count = 0;
+    clearScreen();
 
-    for (const auto& enemy : enemies) {
-        if (enemy.isAlive() && count < 20) {
-            enemyPositions[count][0] = enemy.x;
-            enemyPositions[count][1] = enemy.y;
-            count++;
-        }
-    }
+    drawLine(50);
+    color(COLOR_BRIGHT_YELLOW);
+    drawCenteredText("DUNGEON ADVENTURE", 50);
+    resetColor();
+    drawLine(50);
 
-    map.render(player.x, player.y, enemyPositions, count, footprints, playerFootprints);
+    map.render(player.x, player.y, enemies, enemyFootprints, playerFootprints);
 }
 
 void Game::showPlayerStatus() {
     std::cout << std::endl;
+    drawLine(50);
+
     color(COLOR_BRIGHT_GREEN);
-    std::cout << "Player HP: " << player.hp << "/" << player.maxHp;
+    std::cout << "  " << player.getStatus() << std::endl;
     resetColor();
-    std::cout << " | Attack: " << player.attack << std::endl;
+
     color(COLOR_RED);
-    std::cout << "Enemies Remaining: " << countAliveEnemies() << std::endl;
+    std::cout << "  Enemies: " << countAliveEnemies() << " / " << settings.enemyCount << std::endl;
     resetColor();
-    
+
+    std::cout << "  Remaining: ";
+    bool first = true;
+    for (const auto& e : enemies) {
+        if (e.isAlive()) {
+            if (!first) std::cout << ", ";
+            int colorIdx = e.getId() % 4;
+            switch (colorIdx) {
+                case 0: color(COLOR_RED); break;
+                case 1: color(COLOR_BRIGHT_RED); break;
+                case 2: color(COLOR_MAGENTA); break;
+                case 3: color(COLOR_BRIGHT_MAGENTA); break;
+            }
+            std::cout << e.getSymbol() << "(" << e.getName() << ")";
+            resetColor();
+            first = false;
+        }
+    }
+    std::cout << std::endl;
+    std::cout << std::endl;
+
     if (!combatLog.empty()) {
         std::cout << std::endl;
         color(COLOR_YELLOW);
-        std::cout << "[Recent Actions]" << std::endl;
+        std::cout << "  [Recent]" << std::endl;
         resetColor();
-        size_t start = combatLog.size() > 3 ? combatLog.size() - 3 : 0;
+        size_t start = combatLog.size() > 4 ? combatLog.size() - 4 : 0;
         for (size_t i = start; i < combatLog.size(); ++i) {
-            std::cout << "  " << combatLog[i] << std::endl;
+            std::cout << "    " << combatLog[i] << std::endl;
         }
     }
+    std::cout << std::endl;
 }
 
 int Game::countAliveEnemies() const {
@@ -138,9 +280,16 @@ int Game::countAliveEnemies() const {
     return count;
 }
 
+int Game::calculateDamage(int attackerAtk, int defenderDef) const {
+    int damage = attackerAtk - defenderDef;
+    return std::max(1, damage);
+}
+
 bool Game::handleInput() {
-    std::cout << std::endl << "Enter action (W/A/S/D/Q): ";
-    
+    color(COLOR_BRIGHT_CYAN);
+    std::cout << "  > Action (W/A/S/D/Q): ";
+    resetColor();
+
     char input = Keyboard::getKey();
     input = static_cast<char>(std::toupper(static_cast<unsigned char>(input)));
 
@@ -152,51 +301,44 @@ bool Game::handleInput() {
         case 'S': dy = 1; moved = player.move(dx, dy, map, enemies); break;
         case 'A': dx = -1; moved = player.move(dx, dy, map, enemies); break;
         case 'D': dx = 1; moved = player.move(dx, dy, map, enemies); break;
-        case 'Q': isRunning = false; return false;
+        case 'Q': return false;
         default:
-            std::cout << "Invalid input! Use W/A/S/D to move, Q to quit." << std::endl;
+            std::cout << "  Use W/A/S/D to move, Q to quit." << std::endl;
             return true;
     }
 
     if (moved) {
-        // 添加玩家足迹
         playerFootprints.push_back({player.x - dx, player.y - dy});
-        if (playerFootprints.size() > 50) {
+        if (playerFootprints.size() > 5) {
             playerFootprints.erase(playerFootprints.begin());
         }
-        
-        // 先渲染移动后的画面（实时显示）
-        render();
-        showPlayerStatus();
-        
-        // 检查是否与敌人相邻，若是则触发战斗
+
         bool adjacentToEnemy = false;
         size_t enemyIndex = 0;
         for (size_t i = 0; i < enemies.size(); ++i) {
             if (enemies[i].isAlive()) {
                 int distX = std::abs(player.x - enemies[i].x);
                 int distY = std::abs(player.y - enemies[i].y);
-                if (distX <= 1 && distY <= 1 && (distX > 0 || distY > 0)) {
+                if (distX + distY == 1) {
                     adjacentToEnemy = true;
                     enemyIndex = i;
                     break;
                 }
             }
         }
-        
+
         if (adjacentToEnemy) {
-            // 等待一下让玩家看到移动结果
+            render();
+            showPlayerStatus();
             std::cout << std::endl;
             color(COLOR_BRIGHT_RED);
-            std::cout << "Enemy adjacent! Press any key to fight..." << std::endl;
+            std::cout << "Enemy adjacent! Engaging combat..." << std::endl;
             resetColor();
-            Keyboard::getKey();
             
-            // 触发战斗
-            combat(enemyIndex, false);  // 玩家先手
+            combat(enemyIndex, false);
         }
     } else {
-        std::cout << "Cannot move to that position!" << std::endl;
+        std::cout << "  Cannot move there!" << std::endl;
     }
 
     return true;
@@ -220,21 +362,25 @@ void Game::updateEnemies() {
             enemy.randomMove(map, enemies);
         }
 
-        // 添加敌人足迹
         if (enemy.x != oldX || enemy.y != oldY) {
-            footprints.push_back({oldX, oldY});
-            if (footprints.size() > 50) {
-                footprints.erase(footprints.begin());
+            enemyFootprints[i].push_back({oldX, oldY});
+            if (enemyFootprints[i].size() > 5) {
+                enemyFootprints[i].erase(enemyFootprints[i].begin());
             }
         }
 
-        // 移动后检查是否与玩家相邻
         int newDistX = std::abs(player.x - enemy.x);
         int newDistY = std::abs(player.y - enemy.y);
-        if (newDistX <= 1 && newDistY <= 1 && (newDistX > 0 || newDistY > 0)) {
-            // 敌人主动攻击，先手
+        if (newDistX + newDistY == 1) {
+            render();
+            showPlayerStatus();
+            std::cout << std::endl;
+            color(COLOR_BRIGHT_RED);
+            std::cout << "Enemy approaches! Engaging combat..." << std::endl;
+            resetColor();
+            
             combat(i, true);
-            return;  // 战斗结束，不再处理其他敌人
+            return;
         }
     }
 }
@@ -243,108 +389,120 @@ void Game::combat(size_t enemyIndex, bool enemyFirst) {
     Enemy& enemy = enemies[enemyIndex];
 
     std::cout << std::endl;
+    drawLine(50);
     color(COLOR_BRIGHT_RED);
-    std::cout << "=== Combat Started! ===" << std::endl;
+    drawCenteredText("COMBAT!", 50);
     resetColor();
-    std::cout << "Enemy: " << enemy.getName() << std::endl;
-    std::cout << enemy.getName() << " HP: " << enemy.hp << "/" << enemy.maxHp << std::endl;
-    
+    drawLine(50);
+    std::cout << std::endl;
+
+    color(COLOR_YELLOW);
+    std::cout << "  Enemy: " << enemy.getName() << std::endl;
+    resetColor();
+    std::cout << "  " << enemy.getHealthBar() << std::endl;
+
+    color(COLOR_RED);
+    std::cout << "  Enemy ATK: " << enemy.attack << std::endl;
+    resetColor();
+    std::cout << std::endl;
+
     if (enemyFirst) {
-        color(COLOR_BRIGHT_RED);
-        std::cout << "The enemy attacks first!" << std::endl;
+        color(COLOR_RED);
+        std::cout << "  Enemy attacks first!" << std::endl;
+        resetColor();
+    } else {
+        color(COLOR_GREEN);
+        std::cout << "  You attack first!" << std::endl;
         resetColor();
     }
     std::cout << std::endl;
 
-    // 回合制战斗
-    bool playerTurn = !enemyFirst;  // enemyFirst 为 true 时敌人先手
-    
+    // 回合制战斗 - 固定顺序，不交换
     while (enemy.isAlive() && player.isAlive()) {
-        if (playerTurn) {
-            // 玩家攻击
-            int playerDamage = player.attack;
-            enemy.takeDamage(playerDamage);
-            
-            color(COLOR_GREEN);
-            std::cout << "You attacked " << enemy.getName() << " for " << playerDamage << " damage!" << std::endl;
-            resetColor();
-            showCombatLog("Hit " + enemy.getName() + " for " + std::to_string(playerDamage) + " dmg");
+        if (enemyFirst) {
+            // 敌人先手：敌人攻击 → 玩家反击
+            int enemyDamage = enemy.attack;
+            player.takeDamage(enemyDamage);
 
-            if (!enemy.isAlive()) {
-                color(COLOR_BRIGHT_GREEN);
-                std::cout << enemy.getName() << " defeated!" << std::endl;
+            color(COLOR_RED);
+            std::cout << "  " << enemy.getName() << " attacks you for " << enemyDamage << " damage!" << std::endl;
+            resetColor();
+            addCombatLog(enemy.getName() + " hit you for " + std::to_string(enemyDamage));
+
+            if (!player.isAlive()) {
+                color(COLOR_RED);
+                std::cout << "  You were defeated..." << std::endl;
                 resetColor();
-                showCombatLog(enemy.getName() + " defeated!");
+                addCombatLog("You were defeated");
                 break;
             }
 
-            // 敌人反击
-            int enemyDamage = enemy.attack;
-            player.takeDamage(enemyDamage);
-            
-            color(COLOR_RED);
-            std::cout << enemy.getName() << " attacked you for " << enemyDamage << " damage!" << std::endl;
-            resetColor();
-            showCombatLog(enemy.getName() + " hit you for " + std::to_string(enemyDamage) + " dmg");
+            int playerDamage = player.attack;
+            enemy.takeDamage(playerDamage);
 
-            if (!player.isAlive()) {
-                color(COLOR_BRIGHT_RED);
-                std::cout << "You were defeated..." << std::endl;
+            color(COLOR_GREEN);
+            std::cout << "  You attack " << enemy.getName() << " for " << playerDamage << " damage!" << std::endl;
+            resetColor();
+            addCombatLog("Hit " + enemy.getName() + " for " + std::to_string(playerDamage));
+
+            if (!enemy.isAlive()) {
+                color(COLOR_BRIGHT_GREEN);
+                std::cout << "  " << enemy.getName() << " defeated!" << std::endl;
                 resetColor();
-                showCombatLog("You were defeated");
+                addCombatLog(enemy.getName() + " defeated");
                 break;
             }
         } else {
-            // 敌人先手攻击
-            int enemyDamage = enemy.attack;
-            player.takeDamage(enemyDamage);
-            
-            color(COLOR_RED);
-            std::cout << enemy.getName() << " attacked you for " << enemyDamage << " damage!" << std::endl;
-            resetColor();
-            showCombatLog(enemy.getName() + " hit you for " + std::to_string(enemyDamage) + " dmg");
-
-            if (!player.isAlive()) {
-                color(COLOR_BRIGHT_RED);
-                std::cout << "You were defeated..." << std::endl;
-                resetColor();
-                showCombatLog("You were defeated");
-                break;
-            }
-
-            // 玩家反击
+            // 玩家先手：玩家攻击 → 敌人反击
             int playerDamage = player.attack;
             enemy.takeDamage(playerDamage);
-            
+
             color(COLOR_GREEN);
-            std::cout << "You attacked " << enemy.getName() << " for " << playerDamage << " damage!" << std::endl;
+            std::cout << "  You attack " << enemy.getName() << " for " << playerDamage << " damage!" << std::endl;
             resetColor();
-            showCombatLog("Hit " + enemy.getName() + " for " + std::to_string(playerDamage) + " dmg");
+            addCombatLog("Hit " + enemy.getName() + " for " + std::to_string(playerDamage));
 
             if (!enemy.isAlive()) {
                 color(COLOR_BRIGHT_GREEN);
-                std::cout << enemy.getName() << " defeated!" << std::endl;
+                std::cout << "  " << enemy.getName() << " defeated!" << std::endl;
                 resetColor();
-                showCombatLog(enemy.getName() + " defeated!");
+                addCombatLog(enemy.getName() + " defeated");
+                break;
+            }
+
+            int enemyDamage = enemy.attack;
+            player.takeDamage(enemyDamage);
+
+            color(COLOR_RED);
+            std::cout << "  " << enemy.getName() << " attacks you for " << enemyDamage << " damage!" << std::endl;
+            resetColor();
+            addCombatLog(enemy.getName() + " hit you for " + std::to_string(enemyDamage));
+
+            if (!player.isAlive()) {
+                color(COLOR_RED);
+                std::cout << "  You were defeated..." << std::endl;
+                resetColor();
+                addCombatLog("You were defeated");
                 break;
             }
         }
 
-        // 显示当前血量
         std::cout << std::endl;
-        std::cout << enemy.getName() << " HP: " << enemy.hp << "/" << enemy.maxHp << std::endl;
-        std::cout << "Your HP: " << player.hp << "/" << player.maxHp << std::endl;
-
-        // 切换回合
-        playerTurn = !playerTurn;
+        std::cout << "  " << enemy.getName() << ": " << enemy.getHealthBar() << std::endl;
+        std::cout << "  You: " << player.getHealthBar() << std::endl;
+        std::cout << std::endl;
     }
 
     std::cout << std::endl;
-    std::cout << "Press any key to continue..." << std::endl;
+    drawLine(50);
+    std::cout << std::endl;
+    color(COLOR_YELLOW);
+    std::cout << "  Press any key to continue...";
+    resetColor();
     Keyboard::getKey();
 }
 
-void Game::showCombatLog(const std::string& message) {
+void Game::addCombatLog(const std::string& message) {
     combatLog.push_back(message);
     if (combatLog.size() > 10) combatLog.erase(combatLog.begin());
 }
@@ -352,37 +510,83 @@ void Game::showCombatLog(const std::string& message) {
 void Game::checkGameOver() {
     if (!player.isAlive()) {
         isRunning = false;
-        isVictory = false;
+        result = DEFEAT;
     } else if (countAliveEnemies() == 0) {
         isRunning = false;
-        isVictory = true;
+        result = VICTORY;
     }
 }
 
-void Game::showGameOver() {
+bool Game::showEndScreen() {
     clearScreen();
 
-    std::cout << "================================" << std::endl;
-    if (isVictory) {
-        color(COLOR_BRIGHT_GREEN);
-        std::cout << "   Congratulations! You Won!" << std::endl;
-        resetColor();
-        std::cout << "   All enemies have been defeated!" << std::endl;
-    } else {
-        color(COLOR_BRIGHT_RED);
-        std::cout << "   Game Over" << std::endl;
-        resetColor();
-        std::cout << "   You were defeated..." << std::endl;
-    }
-    std::cout << "================================" << std::endl;
-    std::cout << "Press any key to exit..." << std::endl;
-    Keyboard::getKey();  // 等待用户按键
-}
+    std::cout << std::endl;
+    drawLine(50);
 
-void Game::clearScreen() {
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
-#endif
+    if (result == VICTORY) {
+        color(COLOR_BRIGHT_GREEN);
+        drawCenteredText("VICTORY!", 50);
+        resetColor();
+        std::cout << std::endl;
+        drawCenteredText("All enemies defeated!", 50);
+        drawCenteredText("You are the dungeon master!", 50);
+    } else if (result == DEFEAT) {
+        color(COLOR_BRIGHT_RED);
+        drawCenteredText("DEFEAT", 50);
+        resetColor();
+        std::cout << std::endl;
+        drawCenteredText("You fell in battle...", 50);
+    } else {
+        color(COLOR_YELLOW);
+        drawCenteredText("GAME OVER", 50);
+        resetColor();
+    }
+
+    std::cout << std::endl;
+    drawLine(50);
+    std::cout << std::endl;
+
+    color(COLOR_BRIGHT_CYAN);
+    std::cout << "  [1] Play Again (Same Mode)  [2] Return to Main Menu" << std::endl;
+    resetColor();
+    std::cout << std::endl;
+    color(COLOR_CYAN);
+    std::cout << "  Select (1/2): ";
+    resetColor();
+
+    char input = Keyboard::getKey();
+
+    if (input == '1') {
+        initGame();
+
+        clearScreen();
+        std::cout << std::endl;
+        drawLine(50);
+        color(COLOR_BRIGHT_GREEN);
+        drawCenteredText("GAME START!", 50);
+        resetColor();
+        drawLine(50);
+        std::cout << std::endl;
+        std::cout << "  Defeat all " << settings.enemyCount << " enemies!" << std::endl;
+        std::cout << std::endl;
+        color(COLOR_YELLOW);
+        std::cout << "  Press any key to start...";
+        resetColor();
+        Keyboard::getKey();
+        std::cout << std::endl;
+
+        while (isRunning) {
+            render();
+            showPlayerStatus();
+            if (!handleInput()) {
+                result = QUIT;
+                break;
+            }
+            updateEnemies();
+            checkGameOver();
+        }
+        return showEndScreen();
+    }
+
+    return true;
 }
