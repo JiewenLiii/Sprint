@@ -1,13 +1,15 @@
 #include "player.h"
 #include "enemy.h"
+#include "map.h"
+#include <sstream>
 
 Player::Player() {
     reset();
 }
 
 void Player::reset() {
-    x = 5;
-    y = 5;
+    x = Map::WIDTH / 2;
+    y = Map::HEIGHT / 2;
     hp = 20;
     maxHp = 20;
     attack = 5;
@@ -21,10 +23,9 @@ bool Player::move(int dx, int dy, const Map& map, const std::vector<Enemy>& enem
         return false;
     }
 
-    // 检查是否有敌人在目标位置
     for (const auto& enemy : enemies) {
         if (enemy.isAlive() && enemy.x == newX && enemy.y == newY) {
-            return false;  // 不能走入敌人格子
+            return false;
         }
     }
 
@@ -40,4 +41,16 @@ void Player::takeDamage(int damage) {
 
 bool Player::isAlive() const {
     return hp > 0;
+}
+
+std::string Player::getStatus() const {
+    std::ostringstream oss;
+    oss << "HP: " << hp << "/" << maxHp << " | ATK: " << attack;
+    return oss.str();
+}
+
+std::string Player::getHealthBar() const {
+    std::ostringstream oss;
+    oss << "HP: " << hp << "/" << maxHp;
+    return oss.str();
 }

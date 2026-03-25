@@ -19,6 +19,8 @@ public:
     void takeDamage(int damage);
     bool isAlive() const;
     void reset();
+    std::string getStatus() const;
+    std::string getHealthBar() const;
 };
 
 #endif // PLAYER_H
