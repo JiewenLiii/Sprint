@@ -17,20 +17,26 @@ bool Enemy::isEnemyAt(int x, int y, const std::vector<Enemy>& enemies, int exclu
     return false;
 }
 
-bool Enemy::moveTowardsPlayer(int playerX, int playerY, const Map& map, 
+bool Enemy::moveTowardsPlayer(int playerX, int playerY, const Map& map,
                                const std::vector<Enemy>& enemies) {
-    int dx = 0, dy = 0;
-    if (playerX > x) dx = 1;
-    else if (playerX < x) dx = -1;
-    if (playerY > y) dy = 1;
-    else if (playerY < y) dy = -1;
-
-    int moves[5][2] = {{dx, dy}, {dx, 0}, {0, dy}, {-dx, 0}, {0, -dy}};
-    for (int i = 0; i < 5; ++i) {
+    // 只允许上下左右移动（4 方向）
+    int moves[4][2] = {
+        {0, -1},  // 上
+        {0, 1},   // 下
+        {-1, 0},  // 左
+        {1, 0}    // 右
+    };
+    
+    // 优先选择靠近玩家的方向
+    for (int i = 0; i < 4; ++i) {
         int newX = x + moves[i][0];
         int newY = y + moves[i][1];
-        if (newX == playerX && newY == playerY) continue;
-        if (map.isWalkable(newX, newY) && !isEnemyAt(newX, newY, enemies, id)) {
+        
+        // 检查是否更接近玩家
+        int oldDist = std::abs(playerX - x) + std::abs(playerY - y);
+        int newDist = std::abs(playerX - newX) + std::abs(playerY - newY);
+        
+        if (newDist < oldDist && map.isWalkable(newX, newY) && !isEnemyAt(newX, newY, enemies, id)) {
             x = newX;
             y = newY;
             return true;
@@ -61,11 +67,17 @@ bool Enemy::isAlive() const {
     return hp > 0;
 }
 
+std::string Enemy::getHealthBar() const {
+    std::ostringstream oss;
+    oss << "HP: " << hp << "/" << maxHp;
+    return oss.str();
+}
+
 DifficultySettings getDifficultySettings(Difficulty difficulty) {
     DifficultySettings settings;
     switch (difficulty) {
         case EASY:
-            settings.enemyCount = 3;
+            settings.enemyCount = 4;
             settings.enemyHp = 10;
             settings.enemyAttack = 3;
             break;
@@ -78,10 +90,9 @@ DifficultySettings getDifficultySettings(Difficulty difficulty) {
     return settings;
 }
 
-void spawnEnemies(const Map& map, std::vector<Enemy>& enemies, int count, 
+void spawnEnemies(const Map& map, std::vector<Enemy>& enemies, int count,
                   int hp, int attack, int playerX, int playerY) {
     enemies.clear();
-    // 移除了 srand - 在 main 中已设置
 
     int spawned = 0;
     int attempts = 0;
