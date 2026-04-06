@@ -3,14 +3,14 @@
 #include <ctime>
 #include <sstream>
 
-Enemy::Enemy() : x(0), y(0), hp(10), maxHp(10), attack(3), id(0) {}
+Enemy::Enemy() : Entity(0, 0, 10, 3), id(0) {}
 
 Enemy::Enemy(int startX, int startY, int enemyHp, int enemyAttack, int enemyId)
-    : x(startX), y(startY), hp(enemyHp), maxHp(enemyHp), attack(enemyAttack), id(enemyId) {}
+    : Entity(startX, startY, enemyHp, enemyAttack), id(enemyId) {}
 
 bool Enemy::isEnemyAt(int x, int y, const std::vector<Enemy>& enemies, int excludeId) {
     for (const auto& e : enemies) {
-        if (e.isAlive() && e.id != excludeId && e.x == x && e.y == y) {
+        if (e.isAlive() && e.getId() != excludeId && e.getX() == x && e.getY() == y) {
             return true;
         }
     }
@@ -26,17 +26,20 @@ bool Enemy::moveTowardsPlayer(int playerX, int playerY, const Map& map,
         {-1, 0},  // 左
         {1, 0}    // 右
     };
-    
+
     // 优先选择靠近玩家的方向
     for (int i = 0; i < 4; ++i) {
         int newX = x + moves[i][0];
         int newY = y + moves[i][1];
-        
+
         // 检查是否更接近玩家
         int oldDist = std::abs(playerX - x) + std::abs(playerY - y);
         int newDist = std::abs(playerX - newX) + std::abs(playerY - newY);
-        
+
         if (newDist < oldDist && map.isWalkable(newX, newY) && !isEnemyAt(newX, newY, enemies, id)) {
+            // 记录移动前的位置作为足迹
+            addFootprint(x, y);
+            
             x = newX;
             y = newY;
             return true;
@@ -51,6 +54,9 @@ bool Enemy::randomMove(const Map& map, const std::vector<Enemy>& enemies) {
     int newX = x + directions[dir][0];
     int newY = y + directions[dir][1];
     if (map.isWalkable(newX, newY) && !isEnemyAt(newX, newY, enemies, id)) {
+        // 记录移动前的位置作为足迹
+        addFootprint(x, y);
+        
         x = newX;
         y = newY;
         return true;
@@ -58,19 +64,12 @@ bool Enemy::randomMove(const Map& map, const std::vector<Enemy>& enemies) {
     return false;
 }
 
-void Enemy::takeDamage(int damage) {
-    hp -= damage;
-    if (hp < 0) hp = 0;
-}
-
-bool Enemy::isAlive() const {
-    return hp > 0;
-}
-
-std::string Enemy::getHealthBar() const {
-    std::ostringstream oss;
-    oss << "HP: " << hp << "/" << maxHp;
-    return oss.str();
+void Enemy::addFootprint(int x, int y) {
+    footprints.push_back({x, y});
+    // 保留最近 MAX_FOOTPRINTS 个足迹
+    if (footprints.size() > MAX_FOOTPRINTS) {
+        footprints.erase(footprints.begin());
+    }
 }
 
 DifficultySettings getDifficultySettings(Difficulty difficulty) {
@@ -111,7 +110,7 @@ void spawnEnemies(const Map& map, std::vector<Enemy>& enemies, int count,
         if (map.isWalkable(x, y)) {
             bool occupied = false;
             for (const auto& e : enemies) {
-                if (e.x == x && e.y == y) {
+                if (e.getX() == x && e.getY() == y) {
                     occupied = true;
                     break;
                 }
