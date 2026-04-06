@@ -5,18 +5,18 @@
 ### Windows (MinGW/MSYS2)
 ```bash
 cd C:\Users\34764\Sprint
-g++ -std=c++11 -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
+g++ -std=c++11 -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
 ```
 
 ### Windows (MSVC - 开发者命令行)
 ```batch
 cd C:\Users\34764\Sprint
-cl /EHsc /std:c++11 main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
+cl /EHsc /std:c++11 main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
 ```
 
 ### Linux / macOS
 ```bash
-g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
+g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
 ```
 
 ## 运行游戏
