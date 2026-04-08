@@ -29,7 +29,7 @@
    - 3.5 Battle 类
    - 3.6 Renderer 类
    - 3.7 Game 类
-4. [核心算法 PAD 图](#4-核心算法-pad-图)
+4. [核心算法 N-S 盒图](#4-核心算法-n-s-盒图)
 5. [跨类调用关系](#5-跨类调用关系)
 6. [数据流说明](#6-数据流说明)
 7. [附录](#7-附录)
@@ -57,7 +57,7 @@
 
 | 术语 | 定义 |
 |------|------|
-| PAD 图 | Problem Analysis Diagram，问题分析图 |
+| N-S 盒图 | Nassi-Shneiderman Diagram，Nassi-Shneiderman 图（盒图） |
 | McCabe 圈复杂度 | 衡量程序复杂度的指标，计算公式：判断总数 + 1 |
 | 上帝类 | 承担过多职责的单一类，违反单一职责原则 |
 | 封装 | 隐藏内部实现，通过接口暴露功能 |
@@ -445,7 +445,7 @@
 
 **对应方法**：`Battle::executeCombat(Player& player, Enemy& enemy, bool enemyFirst, std::vector<std::string>& combatLog)`
 
-![回合制战斗执行算法 N-S 盒图](images/ns_executeCombat.png)
+![回合制战斗执行算法 N-S 盒图](../docs/images/ns_executeCombat.png)
 
 **局部变量说明**：
 
@@ -460,7 +460,7 @@
 
 **对应方法**：`Game::showMainMenu()`
 
-![主菜单选择算法 N-S 盒图](images/ns_showMainMenu.png)
+![主菜单选择算法 N-S 盒图](../docs/images/ns_showMainMenu.png)
 
 **局部变量说明**：
 
@@ -475,7 +475,7 @@
 
 **对应方法**：`Game::run()`
 
-![游戏主循环算法 N-S 盒图](images/ns_run.png)
+![游戏主循环算法 N-S 盒图](../docs/images/ns_run.png)
 
 **局部变量说明**：无（状态由类属性维护）
 
@@ -485,7 +485,7 @@
 
 **对应方法**：`Game::handleInput()`
 
-![玩家输入处理算法 N-S 盒图](images/ns_handleInput.png)
+![玩家输入处理算法 N-S 盒图](../docs/images/ns_handleInput.png)
 
 **局部变量说明**：
 
@@ -503,7 +503,7 @@
 
 **对应方法**：`Game::updateEnemies()`
 
-![敌人 AI 更新算法 N-S 盒图](images/ns_updateEnemies.png)
+![敌人 AI 更新算法 N-S 盒图](../docs/images/ns_updateEnemies.png)
 
 **局部变量说明**：
 
@@ -781,7 +781,7 @@ Game::run() 主循环
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0 | 2026-03-26 | 开发团队 | 初始版本（Sprint 1） |
-| v2.0 | 2026-04-06 | 开发团队 | 重构版本：新增 Entity/Battle/Renderer 类详细设计，补充 8 张 PAD 图，规范化方法签名 |
+| v2.0 | 2026-04-06 | 开发团队 | 重构版本：新增 Entity/Battle/Renderer 类详细设计，补充 5 张 N-S 盒图，规范化方法签名 |
 
 ---
 
