@@ -445,7 +445,7 @@
 
 **对应方法**：`Battle::executeCombat(Player& player, Enemy& enemy, bool enemyFirst, std::vector<std::string>& combatLog)`
 
-![回合制战斗执行算法 N-S 盒图](images/ns_executeCombat.png)
+![回合制战斗执行算法 N-S 盒图](https://raw.githubusercontent.com/JiewenLiii/Sprint/main/Sprint%202%20%E4%BA%A4%E4%BB%98%20%E2%94%80%E2%94%80%20Scrum%20%E6%A0%87%E5%87%86%E4%BA%A4%E4%BB%98%E7%89%A9%E6%95%B4%E7%90%86-%E7%AC%AC20%E5%B0%8F%E7%BB%84/images/ns_executeCombat.png)
 
 **局部变量说明**：
 
@@ -460,7 +460,7 @@
 
 **对应方法**：`Game::showMainMenu()`
 
-![主菜单选择算法 N-S 盒图](images/ns_showMainMenu.png)
+![主菜单选择算法 N-S 盒图](https://raw.githubusercontent.com/JiewenLiii/Sprint/main/Sprint%202%20%E4%BA%A4%E4%BB%98%20%E2%94%80%E2%94%80%20Scrum%20%E6%A0%87%E5%87%86%E4%BA%A4%E4%BB%98%E7%89%A9%E6%95%B4%E7%90%86-%E7%AC%AC20%E5%B0%8F%E7%BB%84/images/ns_showMainMenu.png)
 
 **局部变量说明**：
 
@@ -475,7 +475,7 @@
 
 **对应方法**：`Game::run()`
 
-![游戏主循环算法 N-S 盒图](images/ns_run.png)
+![游戏主循环算法 N-S 盒图](https://raw.githubusercontent.com/JiewenLiii/Sprint/main/Sprint%202%20%E4%BA%A4%E4%BB%98%20%E2%94%80%E2%94%80%20Scrum%20%E6%A0%87%E5%87%86%E4%BA%A4%E4%BB%98%E7%89%A9%E6%95%B4%E7%90%86-%E7%AC%AC20%E5%B0%8F%E7%BB%84/images/ns_run.png)
 
 **局部变量说明**：无（状态由类属性维护）
 
@@ -485,7 +485,7 @@
 
 **对应方法**：`Game::handleInput()`
 
-![玩家输入处理算法 N-S 盒图](images/ns_handleInput.png)
+![玩家输入处理算法 N-S 盒图](https://raw.githubusercontent.com/JiewenLiii/Sprint/main/Sprint%202%20%E4%BA%A4%E4%BB%98%20%E2%94%80%E2%94%80%20Scrum%20%E6%A0%87%E5%87%86%E4%BA%A4%E4%BB%98%E7%89%A9%E6%95%B4%E7%90%86-%E7%AC%AC20%E5%B0%8F%E7%BB%84/images/ns_handleInput.png)
 
 **局部变量说明**：
 
@@ -503,7 +503,7 @@
 
 **对应方法**：`Game::updateEnemies()`
 
-![敌人 AI 更新算法 N-S 盒图](images/ns_updateEnemies.png)
+![敌人 AI 更新算法 N-S 盒图](https://raw.githubusercontent.com/JiewenLiii/Sprint/main/Sprint%202%20%E4%BA%A4%E4%BB%98%20%E2%94%80%E2%94%80%20Scrum%20%E6%A0%87%E5%87%86%E4%BA%A4%E4%BB%98%E7%89%A9%E6%95%B4%E7%90%86-%E7%AC%AC20%E5%B0%8F%E7%BB%84/images/ns_updateEnemies.png)
 
 **局部变量说明**：
 
