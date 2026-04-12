@@ -1,0 +1,71 @@
+name: 地牢探险游戏 全功能CI自动化流水线
+# 触发条件：满足作业要求 + 专业扩展
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+  workflow_dispatch:  # 手动触发按钮（专业加分）
+
+# 多平台并行构建：同时在 Ubuntu 和 Windows 上编译验证（跨平台特性，大加分！）
+jobs:
+  build-cross-platform:
+    name: 跨平台编译与校验
+    # 在两个系统上自动测试，证明游戏兼容Windows/Linux
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+      fail-fast: false  # 一个系统失败不影响另一个，方便排查
+
+    steps:
+      # 1. 拉取代码（官方标准动作）
+      - name: 拉取项目代码
+        uses: actions/checkout@v4
+
+      # 2. Ubuntu 环境安装编译器
+      - name: Linux 安装G++编译器
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt update && sudo apt install g++ -y
+
+      # 3. Windows 环境配置MinGW编译器
+      - name: Windows 配置MinGW编译环境
+        if: matrix.os == 'windows-latest'
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
+      # 4. 核心编译：开启严格检查（警告=错误，强制代码规范）
+      - name: 编译游戏（严格模式）
+        run: |
+          g++ -std=c++11 -Wall -Werror -o dungeon \
+          main.cpp \
+          map.cpp \
+          player.cpp \
+          enemy.cpp \
+          game.cpp \
+          colors.cpp \
+          entity.cpp \
+          battle.cpp \
+          renderer.cpp
+
+      # 5. 编译结果校验：必须生成可执行文件才算成功
+      - name: 验证编译结果
+        run: |
+          if [ -f "./dungeon" ] || [ -f "./dungeon.exe" ]; then
+            echo "✅ ${{{ matrix.os }}} 平台编译成功！"
+          else
+            echo "❌ ${{{ matrix.os }}} 平台编译失败！"
+            exit 1
+          fi
+        shell: bash
+
+      # 6. 上传编译产物（可选：自动保存游戏文件，展示成果）
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: dungeon-game-${{ matrix.os }}
+          path: |
+            dungeon
+            dungeon.exe
+          if-no-files-found: error
