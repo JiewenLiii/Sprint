@@ -13,57 +13,43 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-      fail-fast: false # 单平台失败不影响另一平台，完整展示结果
+      fail-fast: false
 
     steps:
-      - name: 拉取代码（解决Node.js警告，强制用Node 22）
+      # 1. 基础拉取代码：移除 node-version 参数，修复 Ubuntu 报错
+      - name: 拉取代码
         uses: actions/checkout@v4
         with:
-          node-version: "22" # 彻底规避Node 20弃用警告，符合GitHub未来要求
-          fetch-depth: 0 # 拉取完整代码历史
+          fetch-depth: 0
 
-      # ============== Linux 平台编译流程 ==============
-      - name: Linux 安装GCC编译器
+      # ============== Linux 平台 (100% 稳定) ==============
+      - name: Linux 安装 GCC
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt install g++ -y
+        run: sudo apt update && sudo apt install g++ -y
 
-      - name: Linux 列出源码文件（排查用，确认文件完整）
-        if: matrix.os == 'ubuntu-latest'
-        run: ls -la *.cpp *.h
-
-      - name: Linux 编译游戏（显式列出所有文件，彻底规避通配符问题）
+      - name: Linux 编译 (显式列文件)
         if: matrix.os == 'ubuntu-latest'
         run: g++ -std=c++11 -Wall -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
 
-      - name: Linux 验证编译结果
+      - name: Linux 验证
         if: matrix.os == 'ubuntu-latest'
-        run: test -f ./dungeon && echo "✅ Linux 平台编译成功" || exit 1
+        run: test -f ./dungeon && echo "✅ Linux OK" || exit 1
 
-      # ============== Windows 平台编译流程（核心修复：修正Action版本） ==============
-      - name: Windows 配置稳定版MinGW（用官方稳定大版本v2，绝对不会找不到）
+      # ============== Windows 平台 (彻底换用 msys2，避免 mingw 版本坑) ==============
+      - name: Windows 配置 MSYS2 环境 (稳定版)
         if: matrix.os == 'windows-latest'
-        uses: egor-tensin/setup-mingw@v2 # 官方稳定大版本，自动跟进最新v2.x.x，100%可解析
+        uses: msys2/setup-msys2@v2
         with:
-          platform: x64
+          msystem: MINGW64
+          update: true
+          install: base-devel mingw-w64-x86_64-gcc
 
-      - name: Windows 刷新环境变量（确保g++全局可用）
+      - name: Windows 编译 (显式列文件)
         if: matrix.os == 'windows-latest'
-        run: refreshenv
-        shell: powershell
-
-      - name: Windows 列出源码文件（排查用，确认文件存在）
-        if: matrix.os == 'windows-latest'
-        run: ls -la *.cpp *.h
-        shell: bash
-
-      - name: Windows 编译游戏（显式列出所有文件，解决通配符兼容问题）
-        if: matrix.os == 'windows-latest'
+        shell: msys2 {0} # 强制使用 MSYS2 的 bash 环境
         run: g++ -std=c++11 -Wall -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
-        shell: bash
 
-      - name: Windows 验证编译结果
+      - name: Windows 验证
         if: matrix.os == 'windows-latest'
-        run: test -f ./dungeon.exe && echo "✅ Windows 平台编译成功" || exit 1
-        shell: bash
+        shell: msys2 {0}
+        run: test -f ./dungeon.exe && echo "✅ Windows OK" || exit 1
