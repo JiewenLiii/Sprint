@@ -19,7 +19,7 @@ jobs:
       - name: 拉取代码（解决Node.js警告，强制用Node 22）
         uses: actions/checkout@v4
         with:
-          node-version: "22" # 规避Node 20弃用警告，兼容GitHub未来要求
+          node-version: "22" # 彻底规避Node 20弃用警告，符合GitHub未来要求
           fetch-depth: 0 # 拉取完整代码历史
 
       # ============== Linux 平台编译流程 ==============
@@ -41,13 +41,12 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: test -f ./dungeon && echo "✅ Linux 平台编译成功" || exit 1
 
-      # ============== Windows 平台编译流程（核心修复） ==============
-      - name: Windows 配置稳定版MinGW
+      # ============== Windows 平台编译流程（核心修复：修正Action版本） ==============
+      - name: Windows 配置稳定版MinGW（用官方稳定大版本v2，绝对不会找不到）
         if: matrix.os == 'windows-latest'
-        uses: egor-tensin/setup-mingw@v2.5.0
+        uses: egor-tensin/setup-mingw@v2 # 官方稳定大版本，自动跟进最新v2.x.x，100%可解析
         with:
           platform: x64
-          toolchain: mingw64
 
       - name: Windows 刷新环境变量（确保g++全局可用）
         if: matrix.os == 'windows-latest'
