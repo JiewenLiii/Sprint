@@ -16,40 +16,41 @@ jobs:
       fail-fast: false
 
     steps:
-      # 1. 基础拉取代码：移除 node-version 参数，修复 Ubuntu 报错
-      - name: 拉取代码
+      # 1. 核心修正：彻底移除无效的 node-version 参数！
+      # actions/checkout@v4 根本不支持该参数，之前的 Unexpected input 报错就是因为它
+      - name: 拉取项目代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # ============== Linux 平台 (100% 稳定) ==============
-      - name: Linux 安装 GCC
+      # ============== Linux 平台（100%稳定，云端Ubuntu自带GCC） ==============
+      - name: Linux 安装GCC
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt update && sudo apt install g++ -y
 
-      - name: Linux 编译 (显式列文件)
+      - name: Linux 编译（显式列所有文件，杜绝通配符兼容问题）
         if: matrix.os == 'ubuntu-latest'
         run: g++ -std=c++11 -Wall -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
 
-      - name: Linux 验证
+      - name: Linux 验证编译结果
         if: matrix.os == 'ubuntu-latest'
-        run: test -f ./dungeon && echo "✅ Linux OK" || exit 1
+        run: test -f ./dungeon && echo "✅ Linux 平台编译成功" || exit 1
 
-      # ============== Windows 平台 (彻底换用 msys2，避免 mingw 版本坑) ==============
-      - name: Windows 配置 MSYS2 环境 (稳定版)
+      # ============== Windows 平台（换用GitHub官方推荐的MSYS2，100%稳定） ==============
+      - name: Windows 配置MSYS2编译环境
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          update: true
-          install: base-devel mingw-w64-x86_64-gcc
+          update: false
+          install: mingw-w64-x86_64-gcc
 
-      - name: Windows 编译 (显式列文件)
-        if: matrix.os == 'windows-latest'
-        shell: msys2 {0} # 强制使用 MSYS2 的 bash 环境
-        run: g++ -std=c++11 -Wall -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
-
-      - name: Windows 验证
+      - name: Windows 编译（统一shell环境，显式列文件）
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
-        run: test -f ./dungeon.exe && echo "✅ Windows OK" || exit 1
+        run: g++ -std=c++11 -Wall -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
+
+      - name: Windows 验证编译结果
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: test -f ./dungeon.exe && echo "✅ Windows 平台编译成功" || exit 1
