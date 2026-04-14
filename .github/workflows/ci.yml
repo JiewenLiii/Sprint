@@ -1,3 +1,4 @@
+# SM: 补全Git Flow流程，feature分支反向同步主干
 name: 地牢探险游戏 CI 自动化流水线
 on:
   push:
