@@ -27,7 +27,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt update && sudo apt install g++ -y
 
-      - name: Linux 编译（补全所有头文件路径）
+      - name: Linux 编译（移除不存在的keyboard.cpp）
         if: matrix.os == 'ubuntu-latest'
         run: |
           g++ -std=c++11 -Wall \
@@ -42,8 +42,7 @@ jobs:
           src/core/game.cpp src/core/battle.cpp \
           src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
           src/world/map.cpp \
-          src/ui/renderer.cpp src/ui/colors.cpp \
-          src/input/keyboard.cpp
+          src/ui/renderer.cpp src/ui/colors.cpp
 
       - name: Linux 验证编译结果
         if: matrix.os == 'ubuntu-latest'
@@ -57,7 +56,7 @@ jobs:
           msystem: MINGW64
           install: mingw-w64-x86_64-gcc
 
-      - name: Windows 编译（补全所有头文件路径）
+      - name: Windows 编译（移除不存在的keyboard.cpp）
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
@@ -73,8 +72,7 @@ jobs:
           src/core/game.cpp src/core/battle.cpp \
           src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
           src/world/map.cpp \
-          src/ui/renderer.cpp src/ui/colors.cpp \
-          src/input/keyboard.cpp
+          src/ui/renderer.cpp src/ui/colors.cpp
 
       - name: Windows 验证编译结果
         if: matrix.os == 'windows-latest'
