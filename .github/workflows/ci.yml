@@ -1,34 +1,34 @@
-name: 地牢探险游戏 CI 自动化编译校验
+# SM: 补全Git Flow流程，feature分支反向同步主干
+name: 地牢探险游戏 CI 自动化流水线
 on:
   push:
-    branches: [develop, feature/*] # 允许develop和所有feature分支触发
+    branches: [develop, feature/*]
   pull_request:
-    branches: [develop] # PR到develop分支触发
-  workflow_dispatch: # 支持手动触发
+    branches: [develop]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: 代码编译与质量校验
-    runs-on: ubuntu-latest
+    name: 跨平台编译校验
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+      fail-fast: false
+
     steps:
-      # 1. 拉取项目代码
       - name: 拉取项目代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. 安装GCC编译环境
-      - name: 安装GCC编译环境
-        run: |
-          sudo apt update
-          sudo apt install g++ -y
+      # ============== Linux 平台（修复版） ==============
+      - name: Linux 安装GCC
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt update && sudo apt install g++ -y
 
-      # 3. 创建编译输出目录
-      - name: 创建编译输出目录
-        run: mkdir -p build
-
-      # 4. 编译游戏源码（补全所有头文件搜索路径，含src/input）
-      - name: 编译游戏源码（模块化路径+全头文件搜索）
+      - name: Linux 编译（移除不存在的keyboard.cpp）
+        if: matrix.os == 'ubuntu-latest'
         run: |
           g++ -std=c++11 -Wall \
           -I src \
@@ -37,13 +37,44 @@ jobs:
           -I src/world \
           -I src/ui \
           -I src/input \
-          -o build/dungeon \
+          -o dungeon \
           src/main.cpp \
           src/core/game.cpp src/core/battle.cpp \
           src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
           src/world/map.cpp \
           src/ui/renderer.cpp src/ui/colors.cpp
 
-      # 5. 验证编译结果
-      - name: 验证编译结果
-        run: test -f ./build/dungeon && echo "✅ 编译成功，develop分支持续Green Build" || exit 1
+      - name: Linux 验证编译结果
+        if: matrix.os == 'ubuntu-latest'
+        run: test -f ./dungeon && echo "✅ Linux 平台编译成功" || exit 1
+
+      # ============== Windows 平台（修复版） ==============
+      - name: Windows 配置MSYS2编译环境
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+
+      - name: Windows 编译（移除不存在的keyboard.cpp）
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          g++ -std=c++11 -Wall \
+          -I src \
+          -I src/core \
+          -I src/entities \
+          -I src/world \
+          -I src/ui \
+          -I src/input \
+          -o dungeon.exe \
+          src/main.cpp \
+          src/core/game.cpp src/core/battle.cpp \
+          src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
+          src/world/map.cpp \
+          src/ui/renderer.cpp src/ui/colors.cpp
+
+      - name: Windows 验证编译结果
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: test -f ./dungeon.exe && echo "✅ Windows 平台编译成功" || exit 1
