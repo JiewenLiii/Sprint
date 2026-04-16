@@ -1,3 +1,5 @@
+#include <thread> 
+#include <chrono> 
 #include "game.h"
 #include "colors.h"
 #include "keyboard.h"
@@ -298,7 +300,7 @@ void Game::combat(size_t enemyIndex, bool enemyFirst) {
     renderer.renderCombatHeader(enemy, player, enemyFirst);
 
     // 委托给 Battle 类执行战斗
-    bool playerWon = battle.executeCombat(player, enemy, enemyFirst, combatLog);
+    battle.executeCombat(player, enemy, enemyFirst, combatLog);
 
     std::cout << std::endl;
     renderer.drawLine(50);
