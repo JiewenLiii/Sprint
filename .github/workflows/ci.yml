@@ -1,14 +1,43 @@
-- name: 创建编译输出目录
-  run: mkdir -p build
+name: 地牢探险游戏 CI 自动化流水线
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
 
-- name: 编译游戏源码（模块化路径）
-  run: |
-    g++ -std=c++11 -Wall -o build/dungeon \
-    src/main.cpp \
-    src/core/game.cpp src/core/battle.cpp \
-    src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
-    src/world/map.cpp \
-    src/ui/renderer.cpp src/ui/colors.cpp
+jobs:
+  build:
+    name: 跨平台代码编译校验
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取仓库完整代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-- name: 验证编译结果
-  run: test -f ./build/dungeon && echo "✅ 编译成功，develop分支保持Green Build" || exit 1
+      - name: 安装GCC编译器
+        run: |
+          sudo apt update
+          sudo apt install g++ -y
+
+      - name: 创建编译输出目录
+        run: mkdir -p build
+
+      - name: 编译游戏源码（模块化路径+头文件搜索）
+        run: |
+          g++ -std=c++11 -Wall \
+          -I src \
+          -I src/core \
+          -I src/entities \
+          -I src/world \
+          -I src/ui \
+          -o build/dungeon \
+          src/main.cpp \
+          src/core/game.cpp src/core/battle.cpp \
+          src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
+          src/world/map.cpp \
+          src/ui/renderer.cpp src/ui/colors.cpp
+
+      - name: 验证编译结果
+        run: test -f ./build/dungeon && echo "✅ 编译成功，develop分支保持Green Build" || exit 1
