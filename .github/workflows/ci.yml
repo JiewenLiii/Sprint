@@ -22,33 +22,61 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Linux 编译环境
+      # ============== Linux 平台（修复版） ==============
       - name: Linux 安装GCC
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt update && sudo apt install g++ -y
 
-      - name: Linux 编译游戏
+      - name: Linux 编译（补全所有头文件路径）
         if: matrix.os == 'ubuntu-latest'
-        run: g++ -std=c++11 -Wall -I src -o dungeon src/main.cpp src/core/*.cpp src/entities/*.cpp src/world/*.cpp src/ui/*.cpp src/input/*.cpp
+        run: |
+          g++ -std=c++11 -Wall \
+          -I src \
+          -I src/core \
+          -I src/entities \
+          -I src/world \
+          -I src/ui \
+          -I src/input \
+          -o dungeon \
+          src/main.cpp \
+          src/core/game.cpp src/core/battle.cpp \
+          src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
+          src/world/map.cpp \
+          src/ui/renderer.cpp src/ui/colors.cpp \
+          src/input/keyboard.cpp
 
-      - name: Linux 验证结果
+      - name: Linux 验证编译结果
         if: matrix.os == 'ubuntu-latest'
-        run: test -f ./dungeon && echo "✅ Linux 编译成功" || exit 1
+        run: test -f ./dungeon && echo "✅ Linux 平台编译成功" || exit 1
 
-      # Windows 编译环境
-      - name: Windows 配置MSYS2
+      # ============== Windows 平台（修复版） ==============
+      - name: Windows 配置MSYS2编译环境
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           install: mingw-w64-x86_64-gcc
 
-      - name: Windows 编译游戏
+      - name: Windows 编译（补全所有头文件路径）
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
-        run: g++ -std=c++11 -Wall -I src -o dungeon.exe src/main.cpp src/core/*.cpp src/entities/*.cpp src/world/*.cpp src/ui/*.cpp src/input/*.cpp
+        run: |
+          g++ -std=c++11 -Wall \
+          -I src \
+          -I src/core \
+          -I src/entities \
+          -I src/world \
+          -I src/ui \
+          -I src/input \
+          -o dungeon.exe \
+          src/main.cpp \
+          src/core/game.cpp src/core/battle.cpp \
+          src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
+          src/world/map.cpp \
+          src/ui/renderer.cpp src/ui/colors.cpp \
+          src/input/keyboard.cpp
 
-      - name: Windows 验证结果
+      - name: Windows 验证编译结果
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
-        run: test -f ./dungeon.exe && echo "✅ Windows 编译成功" || exit 1
+        run: test -f ./dungeon.exe && echo "✅ Windows 平台编译成功" || exit 1
