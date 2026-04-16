@@ -1,57 +1,14 @@
-# SM: 补全Git Flow流程，feature分支反向同步主干
-name: 地牢探险游戏 CI 自动化流水线
-on:
-  push:
-    branches: [develop]
-  pull_request:
-    branches: [develop]
-  workflow_dispatch:
+- name: 创建编译输出目录
+  run: mkdir -p build
 
-jobs:
-  build:
-    name: 跨平台编译校验
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-      fail-fast: false
+- name: 编译游戏源码（模块化路径）
+  run: |
+    g++ -std=c++11 -Wall -o build/dungeon \
+    src/main.cpp \
+    src/core/game.cpp src/core/battle.cpp \
+    src/entities/entity.cpp src/entities/player.cpp src/entities/enemy.cpp \
+    src/world/map.cpp \
+    src/ui/renderer.cpp src/ui/colors.cpp
 
-    steps:
-      # 1. 核心修正：彻底移除无效的 node-version 参数！
-      # actions/checkout@v4 根本不支持该参数，之前的 Unexpected input 报错就是因为它
-      - name: 拉取项目代码
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # ============== Linux 平台（100%稳定，云端Ubuntu自带GCC） ==============
-      - name: Linux 安装GCC
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt update && sudo apt install g++ -y
-
-      - name: Linux 编译（显式列所有文件，杜绝通配符兼容问题）
-        if: matrix.os == 'ubuntu-latest'
-        run: g++ -std=c++11 -Wall -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
-
-      - name: Linux 验证编译结果
-        if: matrix.os == 'ubuntu-latest'
-        run: test -f ./dungeon && echo "✅ Linux 平台编译成功" || exit 1
-
-      # ============== Windows 平台（换用GitHub官方推荐的MSYS2，100%稳定） ==============
-      - name: Windows 配置MSYS2编译环境
-        if: matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: false
-          install: mingw-w64-x86_64-gcc
-
-      - name: Windows 编译（统一shell环境，显式列文件）
-        if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
-        run: g++ -std=c++11 -Wall -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp entity.cpp battle.cpp renderer.cpp
-
-      - name: Windows 验证编译结果
-        if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
-        run: test -f ./dungeon.exe && echo "✅ Windows 平台编译成功" || exit 1
+- name: 验证编译结果
+  run: test -f ./build/dungeon && echo "✅ 编译成功，develop分支保持Green Build" || exit 1

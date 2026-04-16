@@ -9,3 +9,10 @@ dungeon.exe
 *.o
 # 忽略构建目录
 /build/
+# 编译输出
+/build/
+*.exe
+*.obj
+*.o
+.vs/
+.vscode/
