@@ -11,7 +11,7 @@ g++ -std=c++11 -Wall ^
 -I src/entities ^
 -I src/world ^
 -I src/ui ^
--I src/input ^
+-I src/input ^  # 新增：补全input目录的头文件搜索路径
 -o build/dungeon.exe ^
 src/main.cpp ^
 src/core/game.cpp src/core/battle.cpp ^
