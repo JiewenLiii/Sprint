@@ -1,3 +1,5 @@
+#include <thread> 
+#include <chrono> 
 #include "game.h"
 #include "colors.h"
 #include "keyboard.h"
