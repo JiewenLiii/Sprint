@@ -118,7 +118,6 @@
 ## 系统架构图
 
 下图展示了游戏的模块划分和主要依赖关系：
-
 ```mermaid
 graph TD
     Main[src/main.cpp<br/>程序入口] --> Core[core/<br/>游戏核心]
@@ -151,6 +150,7 @@ graph TD
     Game -.->|委托| Battle
     Game -.->|委托| Renderer
     Game -.->|读取| Keyboard
+```
 
 # 核心业务模块职责说明
 
