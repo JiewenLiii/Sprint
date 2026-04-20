@@ -115,6 +115,55 @@
 - **胜利条件**：消灭所有敌人
 - **失败条件**：玩家 HP 归零
 
+## 系统架构图
+
+下图展示了游戏的模块划分和主要依赖关系：
+
+```mermaid
+graph TD
+    Main[src/main.cpp<br/>程序入口] --> Core[core/<br/>游戏核心]
+    Main --> Entities[entities/<br/>实体模块]
+    Main --> World[world/<br/>世界模块]
+    Main --> UI[ui/<br/>界面模块]
+    Main --> Input[input/<br/>输入模块]
+
+    Core --> Game[game.h/cpp<br/>游戏主循环与流程控制]
+    Core --> Battle[battle.h/cpp<br/>回合制战斗系统]
+    Core --> GameTypes[game_types.h<br/>游戏结果枚举]
+
+    Entities --> Entity[entity.h/cpp<br/>实体基类]
+    Entities --> Player[player.h/cpp<br/>玩家移动/状态/碰撞]
+    Entities --> Enemy[enemy.h/cpp<br/>敌人AI/生成/追击]
+
+    World --> Map[map.h/cpp<br/>地图生成/迷雾/视野]
+
+    UI --> Renderer[renderer.h/cpp<br/>控制台渲染/UI绘制]
+    UI --> Colors[colors.h/cpp<br/>跨平台颜色控制]
+
+    Input --> Keyboard[keyboard.h<br/>键盘输入监听]
+
+    Entity -.->|继承| Player
+    Entity -.->|继承| Enemy
+    Player -.->|依赖| Map
+    Player -.->|碰撞检测| Enemy
+    Battle -.->|伤害计算| Player
+    Battle -.->|伤害计算| Enemy
+    Game -.->|委托| Battle
+    Game -.->|委托| Renderer
+    Game -.->|读取| Keyboard
+
+# 核心业务模块职责说明
+
+| 模块文件               | 职责描述                                                                                                                                 |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| main.cpp              | 程序入口，实例化 Game 类并启动游戏主循环。                                                                                               |
+| game.h / game.cpp     | 游戏核心控制器：<br>- 主菜单与难度选择<br>- 游戏状态机（运行中/胜利/失败/退出）<br>- 回合制战斗逻辑（先手判定、攻击结算）<br>- 全局流程控制（玩家回合、敌人回合、胜利/失败检测）<br>- 敌人 AI 调度（追击/巡逻） |
+| map.h / map.cpp       | 世界地图管理：<br>- 20×20 静态地图生成（墙壁、地板）<br>- 圆形视野计算（欧几里得距离 ≤ 6）<br>- 三层迷雾系统（未探索/已探索/可见）<br>- 地图渲染到控制台（含颜色、足迹、单位叠加）<br>- 足迹数据存储与查询 |
+| player.h / player.cpp | 玩家实体：<br>- 位置、HP、攻击力、足迹历史<br>- 移动逻辑（边界检查、墙壁碰撞、敌人碰撞触发战斗）<br>- 状态变更（受伤、死亡、属性查询）           |
+| enemy.h / enemy.cpp   | 敌人实体及群体管理：<br>- 每个敌人的位置、HP、攻击力、独立足迹历史<br>- 生成逻辑（根据难度在可行走区域生成）<br>- AI 移动：追击（6 格内曼哈顿距离）或随机巡逻<br>- 敌人间碰撞避免<br>- 死亡清理 |
+| colors.h / colors.cpp | 跨平台颜色支持：<br>- 定义 ANSI 颜色常量<br>- 提供 setColor() / resetColor() 统一接口<br>- 自动适配 Windows / Linux / macOS                |
+| keyboard.h            | 无缓冲键盘输入：<br>- 实时读取单个按键（无需回车）<br>- 跨平台封装（Windows 用 _kbhit() / _getch()，Linux 用 termios）                     |
+
 ## 编译说明
 
 ### Windows (MinGW/MSYS2)
