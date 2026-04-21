@@ -1,5 +1,5 @@
-#include <thread> 
-#include <chrono> 
+#include <thread>
+#include <chrono>
 #include "game.h"
 #include "colors.h"
 #include "keyboard.h"
@@ -7,8 +7,7 @@
 #include <string>
 #include <cctype>
 #include <algorithm>
-#include <chrono>
-#include <thread>
+
 
 Game::Game() : isRunning(true), result(QUIT), difficulty(EASY) {
     Colors::init();

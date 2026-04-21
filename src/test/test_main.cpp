@@ -1,2 +1,7 @@
+// ✅ 必须放在 doctest.h 引入之前，放在后面完全无效
+#define DOCTEST_CONFIG_NO_WINDOWS
+#define DOCTEST_CONFIG_NO_MULTITHREADING
+#define DOCTEST_CONFIG_DISABLE_COLOR_OUTPUT
+
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"

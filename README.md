@@ -290,3 +290,82 @@ Sprint/
 ## 致谢
 
 感谢所有参与开发的贡献者！
+
+```
+Sprint
+├─ 6.excalidraw
+├─ build.bat
+├─ clean.bat
+├─ docs
+│  ├─ AI_Analysis_Memo.md
+│  ├─ architecture_diagram.md
+│  ├─ BUILD.md
+│  ├─ Code_Review.md
+│  ├─ CODE_REVIEW_REPORT.md
+│  ├─ DDS.md
+│  ├─ images
+│  │  ├─ ns_executeCombat.png
+│  │  ├─ ns_handleInput.png
+│  │  ├─ ns_run.png
+│  │  ├─ ns_showMainMenu.png
+│  │  └─ ns_updateEnemies.png
+│  ├─ openapi
+│  │  └─ v2
+│  ├─ REFACTORING_REPORT.md
+│  ├─ Sprint 2 交付 ── Scrum 标准交付物整理-第20小组
+│  │  ├─ Sprint 回顾报告（Sprint Retrospective）.pdf
+│  │  ├─ 产品待办列表 (Product Backlog)
+│  │  ├─ 地牢探险游戏需求规格说明书.pdf
+│  │  └─ 详细设计说明书 (DDS) .pdf
+│  ├─ Sprint1_Deliverables.md
+│  ├─ User_Stories.md
+│  └─ 可维护性五因素自评报告
+├─ frontend
+│  ├─ combat.html
+│  ├─ css
+│  │  └─ style.css
+│  ├─ index.html
+│  └─ js
+│     ├─ api.js
+│     ├─ combat.js
+│     └─ game.js
+├─ README.md
+├─ Sprint 2 交付 ── Scrum 标准交付物整理-第20小组
+│  ├─ Sprint 回顾报告（Sprint Retrospective）.pdf
+│  ├─ 产品待办列表 (Product Backlog)
+│  ├─ 地牢探险游戏需求规格说明书.pdf
+│  └─ 详细设计说明书 (DDS) .pdf
+└─ src
+   ├─ core
+   │  ├─ battle.cpp
+   │  ├─ battle.h
+   │  ├─ game.cpp
+   │  ├─ game.h
+   │  └─ game_types.h
+   ├─ entities
+   │  ├─ enemy.cpp
+   │  ├─ enemy.h
+   │  ├─ entity.cpp
+   │  ├─ entity.h
+   │  ├─ player.cpp
+   │  └─ player.h
+   ├─ input
+   │  └─ keyboard.h
+   ├─ main.cpp
+   ├─ test
+   │  ├─ doctest.h
+   │  ├─ test_battle.cpp
+   │  ├─ test_main.cpp
+   │  ├─ test_map.cpp
+   │  ├─ test_player.cpp
+   │  └─ test_renderer.cpp
+   ├─ ui
+   │  ├─ colors.cpp
+   │  ├─ colors.h
+   │  ├─ renderer.cpp
+   │  └─ renderer.h
+   └─ world
+      ├─ map.cpp
+      └─ map.h
+
+```
