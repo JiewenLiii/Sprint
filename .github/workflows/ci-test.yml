@@ -16,6 +16,11 @@ jobs:
         run: |
           g++ -std=c++17 -pthread \
           -I./src \
+          -I./src/core \
+          -I./src/entities \
+          -I./src/world \
+          -I./src/ui \
+          -I./src/input \
           src/core/*.cpp \
           src/entities/*.cpp \
           src/ui/*.cpp \
