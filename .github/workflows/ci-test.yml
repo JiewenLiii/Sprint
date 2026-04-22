@@ -1,0 +1,32 @@
+name: 自动单元测试CI
+on:
+  push:
+    branches: [develop, feature/fix-ci-test]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装编译器
+        run: sudo apt update && sudo apt install g++ -y
+      - name: 编译完整测试程序
+        run: |
+          g++ -std=c++17 -pthread \
+          -I./src \
+          -I./src/core \
+          -I./src/entities \
+          -I./src/world \
+          -I./src/ui \
+          -I./src/input \
+          src/core/*.cpp \
+          src/entities/*.cpp \
+          src/ui/*.cpp \
+          src/world/*.cpp \
+          src/test/*.cpp \
+          -o test_runner
+
+      - name: 自动执行全部单元测试
+        run: ./test_runner
