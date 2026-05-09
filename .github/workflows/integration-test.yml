@@ -1,0 +1,48 @@
+name: API Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/integration-test.yml'
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Start backend server
+        run: |
+          cd backend
+          uvicorn main:app --host 0.0.0.0 --port 8080 &
+          sleep 5
+
+      - name: Run integration tests
+        run: |
+          cd backend
+          pytest tests/test_integration.py -v --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: backend/test-results/
+          if-no-files-found: ignore
