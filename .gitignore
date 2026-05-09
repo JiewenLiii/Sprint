@@ -1,18 +1,48 @@
+# ==================== C++ ====================
 *.exe
 *.o
 *.obj
 *.out
-# 忽略可执行文件
 dungeon
 dungeon.exe
-# 忽略对象文件
-*.o
-# 忽略构建目录
 /build/
-# 编译输出
-/build/
-*.exe
-*.obj
-*.o
+
+# ==================== Python ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+*.egg
+.pytest_cache/
+.mypy_cache/
+
+# ==================== Node.js / Vue ====================
+node_modules/
+dist/
+.vite/
+*.local
+
+# ==================== IDE ====================
 .vs/
 .vscode/
+.idea/
+*.swp
+*.swo
+
+# ==================== OS ====================
+.DS_Store
+Thumbs.db
+
+# ==================== Logs ====================
+*.log
+
+# ==================== Coverage ====================
+*.gcov
+*.gcda
+*.gcno
+coverage/
