@@ -3,7 +3,7 @@ Dungeon Adventure - FastAPI Backend
 RESTful API for the web-based dungeon adventure game
 """
 
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
@@ -20,6 +20,11 @@ class DirectionEnum(str, Enum):
     right = "right"
 
 
+class DifficultyEnum(str, Enum):
+    easy = "easy"
+    hard = "hard"
+
+
 class MoveRequest(BaseModel):
     direction: DirectionEnum
 
@@ -29,6 +34,7 @@ class Player(BaseModel):
     position: List[int]
     hp: int
     attack: int
+    maxHp: Optional[int] = 20
     colorIndex: Optional[int] = 1
     isAlive: Optional[bool] = True
 
@@ -54,6 +60,7 @@ class GameInitResponse(BaseModel):
     sessionId: str
     mapRender: MapRender
     player: Player
+    aliveEnemiesCount: int
     message: str
 
 
@@ -62,6 +69,7 @@ class PlayerStatusResponse(BaseModel):
     position: List[int]
     hp: int
     attack: int
+    maxHp: Optional[int] = 20
     isAlive: bool
 
 
@@ -69,6 +77,7 @@ class MoveResponse(BaseModel):
     newPosition: List[int]
     playerStatus: PlayerStatusResponse
     mapRender: MapRender
+    aliveEnemiesCount: int
     combat: Optional[dict] = None
 
 
@@ -113,15 +122,24 @@ app.add_middleware(
 
 
 @app.post("/game/start", response_model=GameInitResponse, tags=["Game"])
-async def game_start(x_session_id: Optional[str] = Header(None)):
-    """Initialize a new game"""
-    session_id, game = create_session()
+async def game_start(
+    x_session_id: Optional[str] = Header(None),
+    difficulty: str = Body("easy", embed=True)
+):
+    """Initialize a new game. Difficulty: 'easy' or 'hard'."""
+    try:
+        diff = Difficulty(difficulty)
+    except ValueError:
+        diff = Difficulty.EASY
+    session_id, game = create_session(diff)
+
     state = game.get_game_state()
 
     return GameInitResponse(
         sessionId=session_id,
         mapRender=MapRender(**state["mapRender"]),
         player=Player(**state["player"]),
+        aliveEnemiesCount=state["aliveEnemiesCount"],
         message=state["message"]
     )
 
@@ -143,6 +161,7 @@ async def player_move(
         newPosition=result["newPosition"],
         playerStatus=PlayerStatusResponse(**result["playerStatus"]),
         mapRender=MapRender(**result["mapRender"]),
+        aliveEnemiesCount=result["aliveEnemiesCount"],
         combat=result.get("combat")
     )
 
@@ -183,16 +202,24 @@ async def player_status(x_session_id: Optional[str] = Header(None)):
 
 
 @app.post("/game/restart", response_model=GameInitResponse, tags=["Game"])
-async def game_restart(x_session_id: Optional[str] = Header(None)):
+async def game_restart(
+    x_session_id: Optional[str] = Header(None),
+    difficulty: str = Body("easy", embed=True)
+):
     """Restart the game"""
     session_id = _resolve_session(x_session_id)
-    game = reset_game(session_id)
+    try:
+        diff = Difficulty(difficulty)
+    except ValueError:
+        diff = Difficulty.EASY
+    game = reset_game(session_id, diff)
     state = game.get_game_state()
 
     return GameInitResponse(
         sessionId=session_id,
         mapRender=MapRender(**state["mapRender"]),
         player=Player(**state["player"]),
+        aliveEnemiesCount=state["aliveEnemiesCount"],
         message="游戏重新开始"
     )
 

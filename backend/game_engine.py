@@ -133,20 +133,17 @@ class Battle:
         combat_log = []
 
         attacker, defender = (enemy, player) if enemy_first else (player, enemy)
-        attacker_name = attacker.id
-        defender_name = defender.id
 
         round_num = 1
         while player.is_alive() and enemy.is_alive():
             damage = self._calculate_damage(attacker.attack)
             defender.take_damage(damage)
 
-            log_entry = f"Round {round_num}: {attacker_name} attacks {defender_name} for {damage} damage"
+            log_entry = f"Round {round_num}: {attacker.id} attacks {defender.id} for {damage} damage"
             combat_log.append(log_entry)
 
             # Swap attacker and defender
             attacker, defender = defender, attacker
-            attacker_name, defender_name = defender_name, attacker_name
             round_num += 1
 
         # Trim log if too long
@@ -221,6 +218,9 @@ class GameEngine:
     def get_game_state(self) -> dict:
         """Get current game state for API response"""
         self.map.update_explored(self.player.x, self.player.y)
+        
+        # 计算存活敌人总数
+        alive_enemies_count = sum(1 for e in self.enemies if e.is_alive())
 
         return {
             "player": {
@@ -228,6 +228,7 @@ class GameEngine:
                 "position": [self.player.x, self.player.y],
                 "hp": self.player.hp,
                 "attack": self.player.attack,
+                "maxHp": self.player.max_hp,
                 "colorIndex": 1
             },
             "mapRender": {
@@ -238,6 +239,7 @@ class GameEngine:
                 "enemies": self._get_visible_enemies(),
                 "enemyTrails": self._get_enemy_trails()
             },
+            "aliveEnemiesCount": alive_enemies_count,
             "message": "游戏开始" if not self.game_over else ("胜利!" if self.victory else "游戏结束")
         }
 
@@ -325,12 +327,21 @@ class GameEngine:
         # Check for adjacent enemies (combat trigger)
         combat_result = self._check_adjacent_enemies()
 
-        # Update enemies
-        self._update_enemies()
+        # Update enemies - 可能有敌人触发战斗
+        if not combat_result:
+            enemy_combat_result = self._update_enemies()
+            if enemy_combat_result:
+                combat_result = enemy_combat_result
+        else:
+            # 已经有玩家触发的战斗，只更新敌人，不再次触发战斗
+            self._update_enemies()
 
         # Check game over
         self._check_game_over()
 
+        # 计算存活敌人总数
+        alive_enemies_count = sum(1 for e in self.enemies if e.is_alive())
+        
         result = {
             "success": True,
             "newPosition": [self.player.x, self.player.y],
@@ -339,9 +350,11 @@ class GameEngine:
                 "position": [self.player.x, self.player.y],
                 "hp": self.player.hp,
                 "attack": self.player.attack,
+                "maxHp": self.player.max_hp,
                 "isAlive": self.player.is_alive()
             },
-            "mapRender": self.get_game_state()["mapRender"]
+            "mapRender": self.get_game_state()["mapRender"],
+            "aliveEnemiesCount": alive_enemies_count
         }
 
         if combat_result:
@@ -360,6 +373,9 @@ class GameEngine:
 
     def _start_combat(self, enemy: Enemy, enemy_first: bool = False) -> dict:
         """Start combat with an enemy"""
+        # 保存战斗前的血量
+        initial_enemy_hp = enemy.hp
+        
         battle = Battle()
         player_wins, combat_log = battle.execute_combat(
             self.player, enemy, enemy_first
@@ -369,12 +385,21 @@ class GameEngine:
             "enemy": {
                 "id": enemy.id,
                 "position": [enemy.x, enemy.y],
-                "hp": enemy.hp,
+                "hp": initial_enemy_hp,  # 返回战斗前的血量用于前端显示
                 "attack": enemy.attack,
                 "colorIndex": enemy.color_index
             },
+            "finalEnemyHp": enemy.hp,  # 战斗后的血量
             "result": "win" if player_wins else "lose",
-            "log": combat_log
+            "log": combat_log,
+            "player": {  # 添加玩家当前状态供前端展示
+                "id": self.player.id,
+                "position": [self.player.x, self.player.y],
+                "hp": self.player.hp,
+                "attack": self.player.attack,
+                "maxHp": self.player.max_hp,
+                "colorIndex": 1
+            }
         }
 
     def start_combat_api(self) -> dict:
@@ -391,6 +416,7 @@ class GameEngine:
                             "position": [self.player.x, self.player.y],
                             "hp": self.player.hp,
                             "attack": self.player.attack,
+                            "maxHp": self.player.max_hp,
                             "colorIndex": 1
                         },
                         "enemy": result["enemy"],
@@ -399,10 +425,12 @@ class GameEngine:
 
         return {"error": "No adjacent enemy", "result": None}
 
-    def _update_enemies(self) -> None:
-        """Update enemy positions (AI movement)"""
+    def _update_enemies(self) -> Optional[dict]:
+        """Update enemy positions (AI movement) and return combat result if any"""
         if not self.player.is_alive():
-            return
+            return None
+            
+        enemy_combat_result = None
 
         for enemy in self.enemies:
             if not enemy.is_alive():
@@ -421,24 +449,38 @@ class GameEngine:
 
             # Check if enemy is now adjacent to player
             new_dist = abs(self.player.x - enemy.x) + abs(self.player.y - enemy.y)
-            if new_dist == 1:
+            if new_dist == 1 and not enemy_combat_result:
                 # Enemy initiates combat
-                self._start_combat(enemy, enemy_first=True)
+                enemy_combat_result = self._start_combat(enemy, enemy_first=True)
+        
+        return enemy_combat_result
 
     def _move_towards_player(self, enemy: Enemy) -> None:
         """Move enemy towards player"""
         dx = 0 if self.player.x == enemy.x else (1 if self.player.x > enemy.x else -1)
         dy = 0 if self.player.y == enemy.y else (1 if self.player.y > enemy.y else -1)
 
-        # Try horizontal first, then vertical
-        new_x, new_y = enemy.x + dx, enemy.y
-        if self._can_enemy_move(new_x, new_y, enemy):
-            enemy.x = new_x
-            return
+        # Build list of candidate moves, prioritizing the axis with greater distance
+        dist_x = abs(self.player.x - enemy.x)
+        dist_y = abs(self.player.y - enemy.y)
 
-        new_x, new_y = enemy.x, enemy.y + dy
-        if self._can_enemy_move(new_x, new_y, enemy):
-            enemy.y = new_y
+        moves = []
+        if dist_x >= dist_y:
+            if dx != 0:
+                moves.append((enemy.x + dx, enemy.y))
+            if dy != 0:
+                moves.append((enemy.x, enemy.y + dy))
+        else:
+            if dy != 0:
+                moves.append((enemy.x, enemy.y + dy))
+            if dx != 0:
+                moves.append((enemy.x + dx, enemy.y))
+
+        for new_x, new_y in moves:
+            if self._can_enemy_move(new_x, new_y, enemy):
+                enemy.x = new_x
+                enemy.y = new_y
+                return
 
     def _random_move(self, enemy: Enemy) -> None:
         """Move enemy randomly"""
@@ -485,6 +527,7 @@ class GameEngine:
             "position": [self.player.x, self.player.y],
             "hp": self.player.hp,
             "attack": self.player.attack,
+            "maxHp": self.player.max_hp,
             "isAlive": self.player.is_alive()
         }
 
@@ -496,10 +539,10 @@ import uuid
 _game_sessions: dict[str, GameEngine] = {}
 
 
-def create_session() -> tuple[str, GameEngine]:
+def create_session(difficulty: Difficulty = Difficulty.EASY) -> tuple[str, GameEngine]:
     """Create a new game session and return (session_id, game)"""
     session_id = str(uuid.uuid4())[:8]
-    game = GameEngine()
+    game = GameEngine(difficulty)
     _game_sessions[session_id] = game
     return session_id, game
 
