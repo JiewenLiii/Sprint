@@ -1,0 +1,39 @@
+name: Ubuntu构建
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  build:
+    name: Ubuntu平台编译
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装GCC编译器
+        run: |
+          sudo apt update
+          sudo apt install g++ -y
+
+      - name: 编译游戏
+        run: |
+          g++ -std=c++17 -Wall -pthread \
+          -I./src \
+          -I./src/core \
+          -I./src/entities \
+          -I./src/world \
+          -I./src/ui \
+          -I./src/input \
+          src/core/*.cpp \
+          src/entities/*.cpp \
+          src/ui/*.cpp \
+          src/world/*.cpp \
+          src/main.cpp \
+          -o dungeon
+
+      - name: 验证编译结果
+        run: test -f ./dungeon && echo "✅ Ubuntu 平台编译成功" || exit 1

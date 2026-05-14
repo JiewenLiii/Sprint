@@ -1,0 +1,66 @@
+name: 跨平台CI构建
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: 跨平台编译校验
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+      fail-fast: false
+
+    steps:
+      - name: 拉取完整代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Linux 安装GCC编译器
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install g++ -y
+
+      - name: Linux 编译游戏
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          g++ -std=c++17 -Wall -pthread \
+          -I./src \
+          -I./src/core \
+          -I./src/entities \
+          -I./src/world \
+          -I./src/ui \
+          -I./src/input \
+          src/core/*.cpp \
+          src/entities/*.cpp \
+          src/ui/*.cpp \
+          src/world/*.cpp \
+          src/main.cpp \
+          -o dungeon
+
+      - name: Linux 验证编译结果
+        if: matrix.os == 'ubuntu-latest'
+        run: test -f ./dungeon && echo "✅ Linux 平台编译成功" || exit 1
+
+      - name: Windows 安装MSVC编译器
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Windows 编译游戏
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          cl /std:c++17 /EHsc /I. /I.\\src /I.\\src\\core /I.\\src\\entities /I.\\src\\world /I.\\src\\ui /I.\\src\\input ^
+          src\\core\\*.cpp src\\entities\\*.cpp src\\ui\\*.cpp src\\world\\*.cpp src\\main.cpp ^
+          /Fe:dungeon.exe
+
+      - name: Windows 验证编译结果
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: if exist dungeon.exe (echo ✅ Windows 平台编译成功) else (exit 1)
