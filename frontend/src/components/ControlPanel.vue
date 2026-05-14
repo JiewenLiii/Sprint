@@ -1,56 +1,22 @@
 <template>
   <div class="card control-card">
     <div class="card-header d-flex align-items-center">
-      <i class="bi bi-keyboard me-2"></i>
-      <h5 class="mb-0">操作说明</h5>
+      <i class="bi bi-controller me-2"></i>
+      <h5 class="mb-0">操作</h5>
     </div>
     <div class="card-body">
-      <div class="keyboard-guide">
-        <div class="key-row">
-          <div class="key-item">
-            <span class="key">W</span>
-            <span class="key-label">上</span>
-          </div>
-        </div>
-        <div class="key-row">
-          <div class="key-item">
-            <span class="key">A</span>
-            <span class="key-label">左</span>
-          </div>
-          <div class="key-item">
-            <span class="key">S</span>
-            <span class="key-label">下</span>
-          </div>
-          <div class="key-item">
-            <span class="key">D</span>
-            <span class="key-label">右</span>
-          </div>
-        </div>
-        <div class="key-row mt-2">
-          <div class="key-item">
-            <span class="key">↑</span>
-            <span class="key-label">上</span>
-          </div>
-          <div class="key-item">
-            <span class="key">↓</span>
-            <span class="key-label">下</span>
-          </div>
-          <div class="key-item">
-            <span class="key">←</span>
-            <span class="key-label">左</span>
-          </div>
-          <div class="key-item">
-            <span class="key">→</span>
-            <span class="key-label">右</span>
-          </div>
-        </div>
+      <div class="hint-text">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+        <span class="mx-1">或</span>
+        <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>
+        <span class="d-block mt-1 text-muted">移动角色</span>
       </div>
-      
+
       <hr class="my-3">
-      
+
       <div class="action-buttons">
-        <button 
-          class="btn btn-restart w-100" 
+        <button
+          class="btn btn-restart w-100"
           @click="$emit('restart')"
           :disabled="disabled"
         >
@@ -79,6 +45,11 @@ defineEmits(['restart'])
   border: 1px solid #7da8b1;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(125, 168, 177, 0.2);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .card-header {
@@ -87,52 +58,35 @@ defineEmits(['restart'])
   border-bottom: 1px solid #7da8b1;
   border-radius: 7px 7px 0 0;
   padding: 8px 15px;
+  flex-shrink: 0;
 }
 
 .card-body {
   background: #f5e2c3;
   border-radius: 0 0 7px 7px;
   padding: 12px;
-}
-
-.keyboard-guide {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.key-row {
-  display: flex;
   justify-content: center;
-  gap: 8px;
 }
 
-.key-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.key {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #e9edc9 0%, #faedcd 100%);
-  border: 2px solid #7da8b1;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 14px;
+.hint-text {
+  text-align: center;
+  font-size: 0.85rem;
   color: #5a4a42;
-  box-shadow: 0 2px 4px rgba(125, 168, 177, 0.2);
 }
 
-.key-label {
-  font-size: 10px;
-  color: #8a7a6b;
+.hint-text kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 11px;
+  background: linear-gradient(135deg, #e9edc9 0%, #faedcd 100%);
+  border: 1px solid #7da8b1;
+  border-radius: 4px;
+  margin: 0 1px;
+  box-shadow: 0 1px 2px rgba(125, 168, 177, 0.2);
 }
 
 hr {

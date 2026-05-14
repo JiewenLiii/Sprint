@@ -173,13 +173,13 @@ watch(() => props.combatLog.length, async () => {
 
 .avatar {
   font-size: 3rem;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 
 .name {
   font-weight: bold;
   color: #5a4a42;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .hp-bar {
