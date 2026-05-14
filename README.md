@@ -1,371 +1,142 @@
-# Dungeon Adventure Game
+# Dungeon Adventure - 地牢探险
 
-一个使用纯 C++ 标准库实现的控制台地牢探险游戏。
+基于 **Python FastAPI + Vue 3** 的 Web 地牢探险游戏，采用前后端分离架构，支持 Docker 一键部署。
 
 ## 功能特性
 
-### 核心玩法
-- **20×20 地图** - 适中的探索空间
-- **圆形视野系统** - 基于欧几里得距离的自然视野
-- **战争迷雾** - 未探索/已探索/可见区域三层显示
-- **实时移动** - WASD 控制，即时响应
-- **足迹系统** - 显示玩家和敌人的移动轨迹（每个单位最近 5 步，2 档渐变效果）
-- **回合制战斗** - 固定先手顺序
-- **难度选择** - Easy/Hard 两种模式
-- **重玩功能** - 游戏结束后可选择重新开始
+- **20×20 地牢地图** - 圆形视野系统 + 战争迷雾
+- **回合制战斗** - 战斗弹窗动画，逐回合展示攻击日志
+- **敌人 AI** - 追击（6 格内）/ 巡逻（6 格外），4 方向移动
+- **双难度模式** - Easy（4 敌人）/ Hard（8 敌人）
+- **足迹系统** - 玩家/敌人足迹渐变显示
+- **多会话隔离** - 通过 Session ID 支持多用户同时游戏
 
-### 游戏界面
+## 系统架构
 
 ```
-============================================================
-                ⚔  DUNGEON ADVENTURE  ⚔
-           Explore the dungeon, defeat all enemies!
-============================================================
-  +--------------------+
-  |????????????????????|
-  |???................#|
-  |??..................|
-  |?...................|
-  |....................|
-  |.......*.,..........|  ← 玩家足迹 (绿色渐变) 和敌人足迹 (黄色渐变)
-  |........@E..........|  ← 玩家和敌人
-  |....................|
-  +--------------------+
-  Position: (10, 10)
-============================================================
-  HP: 20/20 | ATK: 5
-  Enemies: 4 / 4
-  Remaining: E(E1), E(E2), E(E3), E(E4)
-
-  > Action (W/A/S/D/Q): _
+┌─────────────────┐         RESTful API         ┌──────────────────┐
+│   Vue 3 前端     │  ←─── X-Session-Id ────→   │  FastAPI 后端     │
+│   (Nginx:80)    │         JSON                │  (Uvicorn:8080)  │
+│                 │                              │                  │
+│  App.vue        │   POST /game/start           │  main.py         │
+│  GameMap.vue    │   POST /game/player/move     │  game_engine.py  │
+│  CombatModal.vue│   POST /game/combat/start    │                  │
+│  GameLog.vue    │   GET  /game/map/render      │  地图生成         │
+│  PlayerStatus   │   GET  /game/player/status   │  战斗结算         │
+│  DifficultyModal│   POST /game/restart         │  敌人 AI         │
+└─────────────────┘                              └──────────────────┘
+         │                                              │
+         └──────────── docker-compose ──────────────────┘
 ```
 
-### 图例说明
+## 本地开发
 
-| 符号 | 含义 | 显示条件 |
-|------|------|---------|
-| `@` | 玩家 | 始终显示（亮绿色） |
-| `E` | 敌人 | 只在可见区域（红色系，4 种颜色循环） |
-| `#` | 墙壁 | 可见时亮蓝色，不可见时蓝色 |
-| `.` | 地板 | 只在可见区域 |
-| `:` | 已探索地板 | 不可见但已探索（黑色） |
-| `*` | 玩家足迹 | 可见区域，绿色渐变，保留 5 步 |
-| `,` | 敌人足迹 | 可见区域，黄色渐变，保留 5 步（每个敌人独立） |
-| `?` | 未探索区域 | 完全未知（黑色） |
+### 前置要求
 
-### 足迹系统
+- Python 3.11+
+- Node.js 18+
+- Docker & Docker Compose（容器化部署）
 
-**玩家足迹（`*`）**：
-- 保留最近 5 个移动位置
-- 2 档渐变效果：
-  - 最近 2 步：亮绿色（`COLOR_BRIGHT_GREEN`）
-  - 第 3-5 步：普通绿色（`COLOR_GREEN`）
-
-**敌人足迹（`,`）**：
-- **每个敌人独立拥有 5 个足迹**（多个敌人的足迹会同时显示）
-- 2 档渐变效果：
-  - 最近 2 步：亮黄色（`COLOR_BRIGHT_YELLOW`）
-  - 第 3-5 步：普通黄色（`COLOR_YELLOW`）
-- 足迹只在敌人移动时生成，敌人死亡后足迹仍保留
-
-### 视野系统
-
-游戏使用**圆形视野**（欧几里得距离），更加自然真实：
-
-- **可见区域**：距离玩家 ≤ 6 格的圆形范围
-- **已探索区域**：曾经可见的区域，显示为暗色
-- **未探索区域**：从未见过的区域，显示为 `?`
-
-### 操作说明
-
-| 按键 | 功能 |
-|------|------|
-| **W** | 向上移动 |
-| **A** | 向左移动 |
-| **S** | 向下移动 |
-| **D** | 向右移动 |
-| **Q** | 返回主菜单 |
-
-### 战斗机制
-
-#### 先手规则
-
-| 情况 | 先手方 | 攻击顺序 |
-|------|--------|---------|
-| **玩家主动靠近** | 玩家先手 | 玩家→敌人→玩家→敌人... |
-| **敌人主动靠近** | 敌人先手 | 敌人→玩家→敌人→玩家... |
-
-#### 战斗流程
-
-1. 玩家或敌人移动到相邻格（上下左右 4 格）
-2. 显示提示并进入战斗
-3. 先手方攻击，后手方反击
-4. 循环直到一方死亡
-5. 按任意键继续游戏
-
-### 难度设置
-
-| 难度 | 敌人数量 | 敌人 HP | 敌人攻击 |
-|------|---------|--------|---------|
-| **Easy** | 4 | 10 | 3 |
-| **Hard** | 8 | 15 | 6 |
-
-### 游戏目标
-
-- **胜利条件**：消灭所有敌人
-- **失败条件**：玩家 HP 归零
-
-## 系统架构图
-
-下图展示了游戏的模块划分和主要依赖关系：
-```mermaid
-graph TD
-    Main[src/main.cpp<br/>程序入口] --> Core[core/<br/>游戏核心]
-    Main --> Entities[entities/<br/>实体模块]
-    Main --> World[world/<br/>世界模块]
-    Main --> UI[ui/<br/>界面模块]
-    Main --> Input[input/<br/>输入模块]
-
-    Core --> Game[game.h/cpp<br/>游戏主循环与流程控制]
-    Core --> Battle[battle.h/cpp<br/>回合制战斗系统]
-    Core --> GameTypes[game_types.h<br/>游戏结果枚举]
-
-    Entities --> Entity[entity.h/cpp<br/>实体基类]
-    Entities --> Player[player.h/cpp<br/>玩家移动/状态/碰撞]
-    Entities --> Enemy[enemy.h/cpp<br/>敌人AI/生成/追击]
-
-    World --> Map[map.h/cpp<br/>地图生成/迷雾/视野]
-
-    UI --> Renderer[renderer.h/cpp<br/>控制台渲染/UI绘制]
-    UI --> Colors[colors.h/cpp<br/>跨平台颜色控制]
-
-    Input --> Keyboard[keyboard.h<br/>键盘输入监听]
-
-    Entity -.->|继承| Player
-    Entity -.->|继承| Enemy
-    Player -.->|依赖| Map
-    Player -.->|碰撞检测| Enemy
-    Battle -.->|伤害计算| Player
-    Battle -.->|伤害计算| Enemy
-    Game -.->|委托| Battle
-    Game -.->|委托| Renderer
-    Game -.->|读取| Keyboard
-```
-
-# 核心业务模块职责说明
-
-| 模块文件               | 职责描述                                                                                                                                 |
-|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| main.cpp              | 程序入口，实例化 Game 类并启动游戏主循环。                                                                                               |
-| game.h / game.cpp     | 游戏核心控制器：<br>- 主菜单与难度选择<br>- 游戏状态机（运行中/胜利/失败/退出）<br>- 回合制战斗逻辑（先手判定、攻击结算）<br>- 全局流程控制（玩家回合、敌人回合、胜利/失败检测）<br>- 敌人 AI 调度（追击/巡逻） |
-| map.h / map.cpp       | 世界地图管理：<br>- 20×20 静态地图生成（墙壁、地板）<br>- 圆形视野计算（欧几里得距离 ≤ 6）<br>- 三层迷雾系统（未探索/已探索/可见）<br>- 地图渲染到控制台（含颜色、足迹、单位叠加）<br>- 足迹数据存储与查询 |
-| player.h / player.cpp | 玩家实体：<br>- 位置、HP、攻击力、足迹历史<br>- 移动逻辑（边界检查、墙壁碰撞、敌人碰撞触发战斗）<br>- 状态变更（受伤、死亡、属性查询）           |
-| enemy.h / enemy.cpp   | 敌人实体及群体管理：<br>- 每个敌人的位置、HP、攻击力、独立足迹历史<br>- 生成逻辑（根据难度在可行走区域生成）<br>- AI 移动：追击（6 格内曼哈顿距离）或随机巡逻<br>- 敌人间碰撞避免<br>- 死亡清理 |
-| colors.h / colors.cpp | 跨平台颜色支持：<br>- 定义 ANSI 颜色常量<br>- 提供 setColor() / resetColor() 统一接口<br>- 自动适配 Windows / Linux / macOS                |
-| keyboard.h            | 无缓冲键盘输入：<br>- 实时读取单个按键（无需回车）<br>- 跨平台封装（Windows 用 _kbhit() / _getch()，Linux 用 termios）                     |
-
-## 编译说明
-
-### Windows (MinGW/MSYS2)
+### 方式一：本地启动
 
 ```bash
-g++ -std=c++11 -o dungeon.exe main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
+# 后端
+cd backend
+pip install -r requirements.txt
+python main.py
+# → http://localhost:8080
+
+# 前端（新终端）
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173
 ```
 
-### Windows (MSVC - 开发者命令行)
-
-```batch
-cl /EHsc /std:c++11 main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
-```
-
-### Linux / macOS
+### 方式二：Docker 一键启动
 
 ```bash
-g++ -std=c++11 -o dungeon main.cpp map.cpp player.cpp enemy.cpp game.cpp colors.cpp
+docker-compose up --build
+# → http://localhost
 ```
 
-## 运行游戏
+### 方式三：Windows 一键启动
 
-### Windows
 ```bash
-dungeon.exe
+start.bat
 ```
-
-### Linux / macOS
-```bash
-./dungeon
-```
-
-## 系统要求
-
-- **编译器**：支持 C++11 或更高版本
-- **操作系统**：Windows / Linux / macOS
-- **控制台**：支持 ANSI 颜色（Windows 10+ 或 ConEmu 等）
-- **字体**：等宽字体（Consolas、Lucida Console）
-- **依赖**：仅使用 C++ 标准库
-
-## 推荐设置
-
-- **窗口大小**：80×40 字符
-- **字体**：Consolas 或 Lucida Console
 
 ## 项目结构
 
 ```
-Sprint/
-├── main.cpp          # 程序入口
-├── game.h / game.cpp # 游戏主逻辑（菜单、战斗、状态）
-├── map.h / map.cpp   # 地图系统（视野、迷雾、渲染）
-├── player.h / player.cpp # 玩家系统（移动、状态）
-├── enemy.h / enemy.cpp   # 敌人系统（AI、生成、移动）
-├── colors.h / colors.cpp # 跨平台颜色支持
-├── keyboard.h        # 无缓冲键盘输入
-└── README.md         # 本文件
+DungeonAdventure/
+├── backend/
+│   ├── main.py              # FastAPI 入口（7 个 RESTful 端点）
+│   ├── game_engine.py       # 游戏引擎（地图、战斗、敌人 AI、会话管理）
+│   ├── requirements.txt     # 运行依赖
+│   ├── requirements-test.txt # 测试依赖
+│   ├── Dockerfile
+│   └── tests/
+│       └── test_integration.py  # API 集成测试（14 个）
+├── frontend/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js       # Vite 配置（API 代理）
+│   ├── Dockerfile           # 多阶段构建（Node + Nginx）
+│   └── src/
+│       ├── main.js
+│       ├── App.vue          # 主组件
+│       ├── api/
+│       │   └── gameApi.js   # API 客户端
+│       └── components/
+│           ├── GameMap.vue
+│           ├── GameLog.vue
+│           ├── PlayerStatus.vue
+│           ├── CombatModal.vue
+│           ├── DifficultyModal.vue
+│           └── ControlPanel.vue
+├── docker-compose.yml
+├── .github/workflows/
+│   └── docker-build.yml     # CI/CD（集成测试 + GHCR 镜像构建）
+├── docs/
+│   ├── openapi/v2/dungeon-adventure.yaml  # OpenAPI 接口契约
+│   └── ...
+├── AGENTS.md
+└── README.md
 ```
 
-## 技术特点
+## API 端点
 
-1. **跨平台支持** - Windows/Linux/macOS 均可运行
-2. **无缓冲输入** - 使用 `keyboard.h` 实现即时响应
-3. **颜色系统** - `colors.h` 提供跨平台颜色支持
-4. **圆形视野** - 基于欧几里得距离的自然视野
-5. **探索系统** - 记录已探索区域，永久可见
-6. **足迹追踪** - 每个单位独立保留最近 5 步，2 档渐变效果
-7. **敌人 AI** - 追击（6 格内）+ 巡逻（6 格外）
-8. **敌人碰撞** - 敌人之间不会重叠
-9. **主菜单系统** - 难度选择、退出确认
-10. **游戏结束菜单** - 重玩或返回主菜单
-11. **多敌人足迹** - 每个敌人有独立的足迹向量
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/game/start` | 开始新游戏（参数：difficulty） |
+| POST | `/game/restart` | 重新开始 |
+| POST | `/game/player/move` | 玩家移动（参数：direction） |
+| POST | `/game/combat/start` | 触发战斗 |
+| GET | `/game/map/render` | 获取地图渲染数据 |
+| GET | `/game/player/status` | 获取玩家状态 |
+| GET | `/health` | 健康检查 |
 
-## 游戏流程
+详细接口文档：`docs/openapi/v2/dungeon-adventure.yaml`
 
-```
-主菜单 → 选择难度 → 游戏开始
-    ↓
-探索地图 → 移动留下足迹（绿色渐变）
-    ↓
-遭遇敌人 → 触发战斗（固定先手）
-    ↓
-┌─────┴─────┐
-│           │
-胜利       失败
-│           │
-继续探索   游戏结束菜单
-    ↓          ↓
-消灭所有敌人 → 重玩/返回主菜单
+## 测试
+
+```bash
+cd backend
+pip install -r requirements-test.txt
+pytest tests/test_integration.py -v
 ```
 
-## 版本历史
+## 技术栈
 
-### v2.1 (当前版本)
-- ✅ 20×20 地图
-- ✅ 圆形视野系统（欧几里得距离）
-- ✅ 三层迷雾（未探索/已探索/可见）
-- ✅ 足迹渐变效果（5 步，2 档颜色）
-- ✅ **每个敌人独立足迹系统**（多个敌人足迹同时显示）
-- ✅ 主菜单优化（具体数值、退出确认）
-- ✅ 固定顺序战斗系统
-- ✅ 4 方向战斗范围
-- ✅ 敌人颜色区分（4 种红色系循环）
-
-### v2.0
-- ✅ 20×20 地图
-- ✅ 圆形视野系统（欧几里得距离）
-- ✅ 三层迷雾（未探索/已探索/可见）
-- ✅ 足迹渐变效果（5 步）
-- ✅ 主菜单优化（具体数值、退出确认）
-- ✅ 固定顺序战斗系统
-- ✅ 4 方向战斗范围
-
-### v1.0
-- ✅ 基础游戏功能
-- ✅ 视野和迷雾系统
-- ✅ 难度选择
-- ✅ 足迹系统
+| 层 | 技术 |
+|----|------|
+| 后端 | Python 3.11, FastAPI, Pydantic, Uvicorn |
+| 前端 | Vue 3 (Composition API), Bootstrap 5, Vite |
+| 容器 | Docker, Docker Compose, Nginx |
+| CI/CD | GitHub Actions, GHCR |
+| 测试 | pytest, httpx |
 
 ## 许可证
 
-本项目仅供学习和娱乐用途。
-
-## 致谢
-
-感谢所有参与开发的贡献者！
-
-```
-Sprint
-├─ 6.excalidraw
-├─ build.bat
-├─ clean.bat
-├─ docs
-│  ├─ AI_Analysis_Memo.md
-│  ├─ architecture_diagram.md
-│  ├─ BUILD.md
-│  ├─ Code_Review.md
-│  ├─ CODE_REVIEW_REPORT.md
-│  ├─ DDS.md
-│  ├─ images
-│  │  ├─ ns_executeCombat.png
-│  │  ├─ ns_handleInput.png
-│  │  ├─ ns_run.png
-│  │  ├─ ns_showMainMenu.png
-│  │  └─ ns_updateEnemies.png
-│  ├─ openapi
-│  │  └─ v2
-│  ├─ REFACTORING_REPORT.md
-│  ├─ Sprint 2 交付 ── Scrum 标准交付物整理-第20小组
-│  │  ├─ Sprint 回顾报告（Sprint Retrospective）.pdf
-│  │  ├─ 产品待办列表 (Product Backlog)
-│  │  ├─ 地牢探险游戏需求规格说明书.pdf
-│  │  └─ 详细设计说明书 (DDS) .pdf
-│  ├─ Sprint1_Deliverables.md
-│  ├─ User_Stories.md
-│  └─ 可维护性五因素自评报告
-├─ frontend
-│  ├─ combat.html
-│  ├─ css
-│  │  └─ style.css
-│  ├─ index.html
-│  └─ js
-│     ├─ api.js
-│     ├─ combat.js
-│     └─ game.js
-├─ README.md
-├─ Sprint 2 交付 ── Scrum 标准交付物整理-第20小组
-│  ├─ Sprint 回顾报告（Sprint Retrospective）.pdf
-│  ├─ 产品待办列表 (Product Backlog)
-│  ├─ 地牢探险游戏需求规格说明书.pdf
-│  └─ 详细设计说明书 (DDS) .pdf
-└─ src
-   ├─ core
-   │  ├─ battle.cpp
-   │  ├─ battle.h
-   │  ├─ game.cpp
-   │  ├─ game.h
-   │  └─ game_types.h
-   ├─ entities
-   │  ├─ enemy.cpp
-   │  ├─ enemy.h
-   │  ├─ entity.cpp
-   │  ├─ entity.h
-   │  ├─ player.cpp
-   │  └─ player.h
-   ├─ input
-   │  └─ keyboard.h
-   ├─ main.cpp
-   ├─ test
-   │  ├─ doctest.h
-   │  ├─ test_battle.cpp
-   │  ├─ test_main.cpp
-   │  ├─ test_map.cpp
-   │  ├─ test_player.cpp
-   │  └─ test_renderer.cpp
-   ├─ ui
-   │  ├─ colors.cpp
-   │  ├─ colors.h
-   │  ├─ renderer.cpp
-   │  └─ renderer.h
-   └─ world
-      ├─ map.cpp
-      └─ map.h
-
-```
+本项目仅供学习用途。
