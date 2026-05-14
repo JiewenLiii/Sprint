@@ -1,0 +1,217 @@
+openapi: 3.0.3
+info:
+  title: Dungeon Adventure Game API
+  description: 地牢探险游戏全量接口契约
+  version: 2.2.0
+
+servers:
+  - url: http://localhost:8080
+    description: 本地开发环境
+
+paths:
+  /game/start:
+    post:
+      summary: 初始化游戏
+      operationId: gameStart
+      responses:
+        '200':
+          description: 游戏初始化成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameInitResponse'
+
+  /game/player/move:
+    post:
+      summary: 玩家移动
+      operationId: playerMove
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ direction ]
+              properties:
+                direction:
+                  type: string
+                  enum: [ up, down, left, right ]
+      responses:
+        '200':
+          description: 移动成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveResponse'
+
+  /game/combat/start:
+    post:
+      summary: 进入战斗
+      operationId: combatStart
+      responses:
+        '200':
+          description: 战斗结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatResult'
+
+  /game/map/render:
+    get:
+      summary: 获取当前地图渲染数据
+      operationId: mapRender
+      responses:
+        '200':
+          description: 地图渲染信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapRenderResponse'
+
+  /game/player/status:
+    get:
+      summary: 获取玩家状态
+      operationId: playerStatus
+      responses:
+        '200':
+          description: 玩家当前状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerStatusResponse'
+
+  /game/restart:
+    post:
+      summary: 重新开始游戏
+      operationId: gameRestart
+      responses:
+        '200':
+          description: 游戏重启成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameInitResponse'
+
+components:
+  schemas:
+    GameInitResponse:
+      type: object
+      properties:
+        mapRender:
+          $ref: '#/components/schemas/MapRenderResponse'
+        player:
+          $ref: '#/components/schemas/Player'
+        message:
+          type: string
+          example: "游戏开始"
+
+    MapRenderResponse:
+      type: object
+      properties:
+        mapData:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+        fog:
+          type: array
+          items:
+            type: array
+            items:
+              type: boolean
+        playerPosition:
+          type: array
+          items:
+            type: integer
+        playerTrail:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+        enemies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Enemy'
+        enemyTrails:
+          type: array
+          items:
+            type: array
+            items:
+              type: array
+              items:
+                type: integer
+
+    Player:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "player_001"
+        position:
+          type: array
+          items:
+            type: integer
+        hp:
+          type: integer
+          example: 100
+        attack:
+          type: integer
+          example: 10
+        colorIndex:
+          type: integer
+          example: 1
+
+    Enemy:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "enemy_01"
+        position:
+          type: array
+          items:
+            type: integer
+        hp:
+          type: integer
+          example: 50
+        attack:
+          type: integer
+          example: 5
+        colorIndex:
+          type: integer
+          example: 2
+
+    PlayerStatusResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Player'
+      properties:
+        isAlive:
+          type: boolean
+          example: true
+
+    MoveResponse:
+      type: object
+      properties:
+        newPosition:
+          type: array
+          items:
+            type: integer
+        playerStatus:
+          $ref: '#/components/schemas/PlayerStatusResponse'
+        mapRender:
+          $ref: '#/components/schemas/MapRenderResponse'
+
+    CombatResult:
+      type: object
+      properties:
+        player:
+          $ref: '#/components/schemas/Player'
+        enemy:
+          $ref: '#/components/schemas/Enemy'
+        result:
+          type: string
+          enum: [ win, lose, flee ]
+          example: win
