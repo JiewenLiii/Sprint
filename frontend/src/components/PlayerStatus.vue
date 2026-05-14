@@ -1,5 +1,5 @@
 <template>
-  <div class="card player-status-card h-100">
+  <div class="card player-status-card">
     <div class="card-header d-flex align-items-center">
       <i class="bi bi-person-circle me-2"></i>
       <h5 class="mb-0">玩家状态</h5>
@@ -85,6 +85,11 @@ const hpClass = computed(() => {
   border: 1px solid #7da8b1;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(125, 168, 177, 0.2);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .card-header {
@@ -93,13 +98,15 @@ const hpClass = computed(() => {
   border-bottom: 1px solid #7da8b1;
   border-radius: 7px 7px 0 0;
   padding: 8px 15px;
+  flex-shrink: 0;
 }
 
 .card-body {
   background: #f5e2c3;
   border-radius: 0 0 7px 7px;
   padding: 12px;
-  height: calc(100% - 35px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;

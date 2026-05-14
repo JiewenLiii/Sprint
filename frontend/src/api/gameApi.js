@@ -1,5 +1,5 @@
-// API 配置 - 连接真实后端
-const API_BASE = 'http://localhost:8080'
+// API 配置 - 支持环境变量配置
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 // Session ID 管理
 let currentSessionId = null
@@ -38,13 +38,19 @@ async function apiRequest(url, options = {}) {
 
 export const GameAPI = {
   // 开始游戏
-  async startGame() {
-    return apiRequest('/game/start', { method: 'POST' })
+  async startGame(difficulty = 'easy') {
+    return apiRequest('/game/start', {
+      method: 'POST',
+      body: JSON.stringify({ difficulty })
+    })
   },
-  
+
   // 重新开始游戏
-  async restartGame() {
-    return apiRequest('/game/restart', { method: 'POST' })
+  async restartGame(difficulty = 'easy') {
+    return apiRequest('/game/restart', {
+      method: 'POST',
+      body: JSON.stringify({ difficulty })
+    })
   },
   
   // 玩家移动
